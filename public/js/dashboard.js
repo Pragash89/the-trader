@@ -504,30 +504,137 @@ async function closeTrade(tradeId, symbol) {
   }
 }
 
-// ===== DEPOSIT / WITHDRAW =====
+// ===== DEPOSIT =====
+const PROMO_CODES = ['TRADER2024','WELCOME100','BONUS50','FOREX25','GOLD200','CRYPTO75','VIP500','LAUNCH10'];
+let promoApplied = false;
+
 function setAmount(n) { const el = document.getElementById('depositAmount'); if (el) el.value = n; }
+
+function selectDepMethod(m) {
+  ['dep-bank','dep-card','dep-crypto','dep-upi'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const panel = document.getElementById('dep-' + m);
+  if (panel) panel.style.display = 'block';
+}
+
+// Card number formatter & error
+function formatCardNum(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,16);
+  el.value = v.replace(/(.{4})/g,'$1 ').trim();
+  const icon = document.getElementById('cardTypeIcon');
+  if (icon) { if (v[0]==='4') icon.textContent='💳'; else if (v[0]==='5') icon.textContent='💳'; else if (v.startsWith('37')||v.startsWith('34')) icon.textContent='💳'; else icon.textContent='💳'; }
+}
+function checkCard() {
+  const val = document.getElementById('cardNumber')?.value.replace(/\s/g,'') || '';
+  const errEl = document.getElementById('cardError');
+  if (errEl && val.length >= 4) { errEl.style.display = 'block'; }
+}
+function formatExpiry(el) {
+  let v = el.value.replace(/\D/g,'');
+  if (v.length >= 2) v = v.substring(0,2) + ' / ' + v.substring(2,4);
+  el.value = v;
+}
+
+// Crypto wallets — ⚠️ REPLACE THESE WITH YOUR ACTUAL WALLET ADDRESSES
+const WALLETS = {
+  btc: { label: 'Bitcoin (BTC) Wallet Address', addr: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh', warn: '⚠️ Send only BTC to this address. Wrong network = permanent loss.' },
+  eth: { label: 'Ethereum (ETH) Wallet Address — ERC-20', addr: '0x742d35Cc6634C0532925a3b8f4C9E2a4a7F8D3b', warn: '⚠️ Send only ETH (ERC-20) to this address.' },
+  usdt_trc20: { label: 'USDT Wallet — TRC-20 (Tron)', addr: 'TQn9Y2khddWmXvAQmSEV4gECe8LpyCMT5g', warn: '⚠️ Send only USDT on TRC-20 network. Do NOT send ERC-20 here.' },
+  usdt_erc20: { label: 'USDT Wallet — ERC-20 (Ethereum)', addr: '0x742d35Cc6634C0532925a3b8f4C9E2a4a7F8D3b', warn: '⚠️ Send only USDT on ERC-20 network. Do NOT send TRC-20 here.' },
+  usdt_bep20: { label: 'USDT Wallet — BEP-20 (BSC)', addr: '0x9F8cCb27D4B451eAf3A3e09d4CD43EC2Ba98eE7', warn: '⚠️ Send only USDT on BEP-20 (Binance Smart Chain) network.' },
+  bnb: { label: 'BNB Wallet Address — BEP-20', addr: '0x9F8cCb27D4B451eAf3A3e09d4CD43EC2Ba98eE7', warn: '⚠️ Send only BNB on BEP-20 network.' },
+  ltc: { label: 'Litecoin (LTC) Wallet Address', addr: 'ltc1q8c6fshw2dlwun7ekn9qwf37cu2rn755upcp6ed', warn: '⚠️ Send only LTC to this address.' },
+  xrp: { label: 'Ripple (XRP) Wallet Address', addr: 'rN7n3473SaZBCG4dFL80SoFBpSCMgpf5HN', warn: '⚠️ XRP Destination Tag: 1234567. Include tag or funds may be lost.' },
+};
+
+function selectCoin(coin, el) {
+  document.querySelectorAll('.crypto-opt').forEach(o => o.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const w = WALLETS[coin];
+  if (!w) return;
+  document.getElementById('walletLabel').textContent = w.label;
+  document.getElementById('walletAddr').textContent = w.addr;
+  document.getElementById('walletWarn').textContent = w.warn;
+}
+
+function copyWallet() {
+  const addr = document.getElementById('walletAddr')?.textContent;
+  if (addr) { navigator.clipboard.writeText(addr).then(() => { const btn = document.querySelector('.copy-btn'); if(btn){btn.textContent='✅ Copied!'; setTimeout(()=>btn.textContent='📋 Copy Address',2000); } }); }
+}
+
+// UPI
+const UPI_IDS = { phonepe:'thetrader@ybl', gpay:'thetrader@oksbi', paytm:'thetrader@paytm', amazon:'thetrader@apl', bhim:'thetrader@upi', cred:'thetrader@axl', airtel:'thetrader@airtelp', mobikwik:'thetrader@mbk' };
+function selectUPI(svc, el) {
+  document.querySelectorAll('.upi-opt').forEach(o => o.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const id = UPI_IDS[svc] || 'thetrader@ybl';
+  const el2 = document.getElementById('upiAddr');
+  if (el2) el2.textContent = id;
+}
+
+function copyText(text, badgeId) {
+  navigator.clipboard.writeText(text).then(() => {
+    const el = document.getElementById(badgeId);
+    if (el) { el.textContent = '✓ Copied'; setTimeout(() => el.textContent = 'Copy', 2000); }
+  });
+}
+
+// Promo
+function togglePromo() {
+  const box = document.getElementById('promoBox');
+  const arrow = document.getElementById('promoArrow');
+  if (box) { const open = box.style.display !== 'none'; box.style.display = open ? 'none' : 'block'; if(arrow) arrow.textContent = open ? '▼' : '▲'; }
+}
+
+function validatePromo() {
+  const code = document.getElementById('promoCode')?.value.trim().toUpperCase();
+  const msg = document.getElementById('promoMsg');
+  if (!msg) return;
+  if (PROMO_CODES.includes(code)) {
+    msg.style.display = 'block';
+    msg.style.color = '#059669';
+    msg.style.background = '#f0fdf4';
+    msg.style.padding = '6px 10px';
+    msg.style.borderRadius = '6px';
+    msg.style.border = '1px solid #6ee7b7';
+    msg.textContent = '✅ Promo code applied! Bonus will be credited after deposit confirmation.';
+    promoApplied = true;
+  } else {
+    msg.style.display = 'block';
+    msg.style.color = '#dc2626';
+    msg.style.background = '#fef2f2';
+    msg.style.padding = '6px 10px';
+    msg.style.borderRadius = '6px';
+    msg.style.border = '1px solid #fca5a5';
+    msg.textContent = '❌ Invalid promo code. Try: WELCOME100, TRADER2024, BONUS50...';
+    promoApplied = false;
+  }
+}
 
 async function submitDeposit() {
   const amount = parseFloat(document.getElementById('depositAmount')?.value);
   const method = document.querySelector('input[name="pm"]:checked')?.value || 'Bank Transfer';
   const msgEl = document.getElementById('depositMsg');
-  msgEl.style.display = 'none';
-
+  if (msgEl) msgEl.style.display = 'none';
   if (!amount || amount < 100) { showMsg('depositMsg', 'error', 'Minimum deposit is $100'); return; }
 
   const btn = document.getElementById('depositBtn');
-  btn.disabled = true; btn.textContent = 'Submitting...';
+  btn.disabled = true; btn.textContent = 'Processing...';
   try {
-    const res = await fetch(`${API}/transactions/deposit`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ amount, method }) });
+    const body = { amount, method };
+    if (promoApplied) body.promo = document.getElementById('promoCode')?.value.trim().toUpperCase();
+    const res = await fetch(`${API}/transactions/deposit`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
-    showMsg('depositMsg', 'success', `✅ ${data.message} Reference: ${data.reference}`);
+    showMsg('depositMsg', 'success', `✅ Deposit request submitted! Reference: ${data.reference}. Our team will confirm within 24h.`);
     document.getElementById('depositAmount').value = '';
     await loadDashboard();
   } catch (err) {
     showMsg('depositMsg', 'error', '❌ ' + err.message);
   } finally {
-    btn.disabled = false; btn.textContent = 'Submit Deposit Request';
+    btn.disabled = false; btn.textContent = 'Deposit';
   }
 }
 

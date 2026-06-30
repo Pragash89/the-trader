@@ -302,58 +302,213 @@
     <!-- Deposit -->
     <div id="page-deposit" class="page">
       <div class="page-header">
-        <div><h2>Deposit Funds</h2><p class="page-sub">Fund your trading account securely</p></div>
+        <div><h2>Deposit Funds</h2><p class="page-sub">Fund your trading account securely via your preferred method</p></div>
       </div>
-      <div class="finance-layout">
-        <div class="finance-form-card">
-          <h3>New Deposit Request</h3>
-          <div class="amount-presets">
-            <button class="preset-btn" onclick="setAmount(500)">$500</button>
-            <button class="preset-btn" onclick="setAmount(1000)">$1,000</button>
-            <button class="preset-btn" onclick="setAmount(2500)">$2,500</button>
-            <button class="preset-btn" onclick="setAmount(5000)">$5,000</button>
-          </div>
-          <div class="form-group">
-            <label>Amount (USD)</label>
-            <input type="number" id="depositAmount" placeholder="Minimum $100" min="100">
-          </div>
-          <div class="form-group">
-            <label>Payment Method</label>
-            <div class="payment-methods" id="depositMethod">
-              <label class="pm-card">
+
+      <!-- Step 1: Amount + Method -->
+      <div class="dep-step" id="dep-step1">
+        <div class="finance-layout">
+          <div class="finance-form-card">
+            <h3 style="margin-bottom:20px;">Select Amount</h3>
+            <div class="amount-presets">
+              <button class="preset-btn" onclick="setAmount(100)">$100</button>
+              <button class="preset-btn" onclick="setAmount(500)">$500</button>
+              <button class="preset-btn" onclick="setAmount(1000)">$1,000</button>
+              <button class="preset-btn" onclick="setAmount(2500)">$2,500</button>
+              <button class="preset-btn" onclick="setAmount(5000)">$5,000</button>
+              <button class="preset-btn" onclick="setAmount(10000)">$10,000</button>
+            </div>
+            <div class="form-group" style="margin-top:16px;">
+              <label>Amount (USD)</label>
+              <input type="number" id="depositAmount" placeholder="Enter amount (min $100)" min="100">
+            </div>
+
+            <h3 style="margin:24px 0 16px;">Payment Method</h3>
+            <div class="dep-methods">
+              <label class="dep-method-card" onclick="selectDepMethod('bank')">
                 <input type="radio" name="pm" value="Bank Transfer" checked>
-                <span class="pm-icon">🏦</span><span>Bank Transfer</span>
+                <div class="dmc-inner">
+                  <div class="dmc-icon">🏦</div>
+                  <div class="dmc-name">Bank Transfer</div>
+                  <div class="dmc-sub">1-3 days</div>
+                </div>
               </label>
-              <label class="pm-card">
+              <label class="dep-method-card" onclick="selectDepMethod('card')">
                 <input type="radio" name="pm" value="Credit/Debit Card">
-                <span class="pm-icon">💳</span><span>Credit Card</span>
+                <div class="dmc-inner">
+                  <div class="dmc-icon">💳</div>
+                  <div class="dmc-name">Card Payment</div>
+                  <div class="dmc-sub">Instant</div>
+                </div>
               </label>
-              <label class="pm-card">
+              <label class="dep-method-card" onclick="selectDepMethod('crypto')">
                 <input type="radio" name="pm" value="Crypto">
-                <span class="pm-icon">₿</span><span>Crypto</span>
+                <div class="dmc-inner">
+                  <div class="dmc-icon">₿</div>
+                  <div class="dmc-name">Cryptocurrency</div>
+                  <div class="dmc-sub">30-60 min</div>
+                </div>
               </label>
-              <label class="pm-card">
-                <input type="radio" name="pm" value="Skrill">
-                <span class="pm-icon">💱</span><span>Skrill</span>
+              <label class="dep-method-card" onclick="selectDepMethod('upi')">
+                <input type="radio" name="pm" value="UPI">
+                <div class="dmc-inner">
+                  <div class="dmc-icon">📱</div>
+                  <div class="dmc-name">UPI Payment</div>
+                  <div class="dmc-sub">Instant</div>
+                </div>
               </label>
             </div>
+
+            <!-- Bank Transfer Details -->
+            <div id="dep-bank" class="dep-detail-panel" style="display:block;">
+              <div class="dep-detail-header">🏦 Bank Transfer — Send to this account</div>
+              <div class="bank-details-table">
+                <div class="bd-row"><span class="bd-label">Bank Name</span><span class="bd-val">Standard Chartered Bank</span></div>
+                <div class="bd-row"><span class="bd-label">Account Name</span><span class="bd-val">The Trader Financial Ltd</span></div>
+                <div class="bd-row"><span class="bd-label">Account Number</span><span class="bd-val bd-copy" onclick="copyText('9876543210','bank-acc')">9876 5432 1012 <span class="copy-badge" id="bank-acc">Copy</span></span></div>
+                <div class="bd-row"><span class="bd-label">SWIFT / BIC</span><span class="bd-val bd-copy" onclick="copyText('SCBLGB2L','bank-swift')">SCBLGB2L <span class="copy-badge" id="bank-swift">Copy</span></span></div>
+                <div class="bd-row"><span class="bd-label">IBAN</span><span class="bd-val bd-copy" onclick="copyText('GB29SCBL60161331926819','bank-iban')">GB29SCBL6016 1331 9268 19 <span class="copy-badge" id="bank-iban">Copy</span></span></div>
+                <div class="bd-row"><span class="bd-label">Currency</span><span class="bd-val">USD (US Dollars)</span></div>
+                <div class="bd-row"><span class="bd-label">Reference</span><span class="bd-val bd-copy" onclick="copyText('TRDEP' + (Date.now()%100000),'bank-ref')">Use your registered email <span class="copy-badge" id="bank-ref">—</span></span></div>
+              </div>
+              <div class="dep-note">⚠️ Include your registered email as payment reference. Processing: 1–3 business days.</div>
+            </div>
+
+            <!-- Card Payment Details -->
+            <div id="dep-card" class="dep-detail-panel" style="display:none;">
+              <div class="dep-detail-header">
+                <span>💳 Secure Card Payment</span>
+                <span class="secure-badges">🔒 SSL <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/32px-Mastercard-logo.svg.png" height="16" alt="MC"> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/40px-Visa_Inc._logo.svg.png" height="14" alt="Visa"></span>
+              </div>
+              <div class="card-form">
+                <div class="form-group">
+                  <label>Cardholder Name</label>
+                  <input type="text" id="cardName" placeholder="Name as on card">
+                </div>
+                <div class="form-group">
+                  <label>Card Number</label>
+                  <div style="position:relative;">
+                    <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCardNum(this)" onblur="checkCard()">
+                    <span class="card-type-icon" id="cardTypeIcon">💳</span>
+                  </div>
+                  <div id="cardError" class="dep-card-error" style="display:none;">Your Card is not accepted for payments</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="form-group">
+                    <label>Expiry Date</label>
+                    <input type="text" id="cardExpiry" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)">
+                  </div>
+                  <div class="form-group">
+                    <label>CVV / CVC</label>
+                    <input type="password" id="cardCVV" placeholder="•••" maxlength="4">
+                  </div>
+                </div>
+                <div class="secure-payment-seal">
+                  <span>🔐 256-bit SSL Encrypted</span>
+                  <span>✓ 3D Secure Verified</span>
+                  <span>✓ PCI DSS Compliant</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Crypto Details -->
+            <div id="dep-crypto" class="dep-detail-panel" style="display:none;">
+              <div class="dep-detail-header">₿ Cryptocurrency Deposit</div>
+              <div class="form-group" style="margin-bottom:16px;">
+                <label>Select Cryptocurrency</label>
+                <div class="crypto-selector">
+                  <label class="crypto-opt active" onclick="selectCoin('btc',this)"><input type="radio" name="coin" value="btc" checked> ₿ Bitcoin (BTC)</label>
+                  <label class="crypto-opt" onclick="selectCoin('eth',this)"><input type="radio" name="coin" value="eth"> Ξ Ethereum (ETH)</label>
+                  <label class="crypto-opt" onclick="selectCoin('usdt_trc20',this)"><input type="radio" name="coin" value="usdt_trc20"> ₮ USDT TRC-20</label>
+                  <label class="crypto-opt" onclick="selectCoin('usdt_erc20',this)"><input type="radio" name="coin" value="usdt_erc20"> ₮ USDT ERC-20</label>
+                  <label class="crypto-opt" onclick="selectCoin('usdt_bep20',this)"><input type="radio" name="coin" value="usdt_bep20"> ₮ USDT BEP-20</label>
+                  <label class="crypto-opt" onclick="selectCoin('bnb',this)"><input type="radio" name="coin" value="bnb"> BNB (BEP-20)</label>
+                  <label class="crypto-opt" onclick="selectCoin('ltc',this)"><input type="radio" name="coin" value="ltc"> Ł Litecoin (LTC)</label>
+                  <label class="crypto-opt" onclick="selectCoin('xrp',this)"><input type="radio" name="coin" value="xrp"> ◈ Ripple (XRP)</label>
+                </div>
+              </div>
+              <div class="wallet-address-box" id="walletBox">
+                <div class="wallet-label" id="walletLabel">Bitcoin (BTC) Wallet Address</div>
+                <div class="wallet-addr" id="walletAddr">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
+                <button class="copy-btn" onclick="copyWallet()">📋 Copy Address</button>
+                <div class="wallet-warn" id="walletWarn">⚠️ Send only BTC to this address. Wrong network = permanent loss of funds.</div>
+              </div>
+              <div class="dep-note">Minimum: $100 equivalent. Credited after 3 blockchain confirmations (usually 20-60 min).</div>
+            </div>
+
+            <!-- UPI Details -->
+            <div id="dep-upi" class="dep-detail-panel" style="display:none;">
+              <div class="dep-detail-header">📱 UPI Payment</div>
+              <div class="form-group" style="margin-bottom:16px;">
+                <label>Select UPI Service</label>
+                <div class="upi-selector">
+                  <label class="upi-opt active" onclick="selectUPI('phonepe',this)"><input type="radio" name="upi_svc" value="phonepe" checked><span class="upi-logo">📲</span>PhonePe</label>
+                  <label class="upi-opt" onclick="selectUPI('gpay',this)"><input type="radio" name="upi_svc" value="gpay"><span class="upi-logo">G</span>Google Pay</label>
+                  <label class="upi-opt" onclick="selectUPI('paytm',this)"><input type="radio" name="upi_svc" value="paytm"><span class="upi-logo">P</span>Paytm</label>
+                  <label class="upi-opt" onclick="selectUPI('amazon',this)"><input type="radio" name="upi_svc" value="amazon"><span class="upi-logo">A</span>Amazon Pay</label>
+                  <label class="upi-opt" onclick="selectUPI('bhim',this)"><input type="radio" name="upi_svc" value="bhim"><span class="upi-logo">🇮🇳</span>BHIM</label>
+                  <label class="upi-opt" onclick="selectUPI('cred',this)"><input type="radio" name="upi_svc" value="cred"><span class="upi-logo">C</span>CRED</label>
+                  <label class="upi-opt" onclick="selectUPI('airtel',this)"><input type="radio" name="upi_svc" value="airtel"><span class="upi-logo">✈</span>Airtel Pay</label>
+                  <label class="upi-opt" onclick="selectUPI('mobikwik',this)"><input type="radio" name="upi_svc" value="mobikwik"><span class="upi-logo">M</span>MobiKwik</label>
+                </div>
+              </div>
+              <div class="upi-id-box">
+                <div class="wallet-label">UPI ID (Pay to this address)</div>
+                <div class="wallet-addr" id="upiAddr">thetrader@ybl</div>
+                <button class="copy-btn" onclick="copyText('thetrader@ybl','upi-copy')">📋 Copy UPI ID <span id="upi-copy"></span></button>
+              </div>
+              <div class="form-group" style="margin-top:14px;">
+                <label>Your UPI Transaction ID (after payment)</label>
+                <input type="text" id="upiTxnId" placeholder="e.g. 412345678901">
+              </div>
+              <div class="dep-note">💡 After paying via UPI, enter your Transaction ID above and submit. Amount credited within 30 minutes.</div>
+            </div>
+
+            <!-- Promo Code -->
+            <div class="promo-section">
+              <div class="promo-toggle" onclick="togglePromo()">
+                <span>🎁 Have a Promo Code?</span>
+                <span id="promoArrow">▼</span>
+              </div>
+              <div id="promoBox" style="display:none;margin-top:12px;">
+                <div class="form-group" style="margin:0;">
+                  <label>Promo / Referral Code</label>
+                  <div style="display:flex;gap:8px;">
+                    <input type="text" id="promoCode" placeholder="Enter promo code" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+                    <button onclick="validatePromo()" class="btn-blue" style="padding:10px 18px;font-size:13px;white-space:nowrap;">Apply</button>
+                  </div>
+                  <div id="promoMsg" style="margin-top:6px;font-size:13px;display:none;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="depositMsg" class="trade-message" style="display:none"></div>
+            <button class="btn-blue" onclick="submitDeposit()" id="depositBtn" style="width:100%;padding:14px;font-size:15px;margin-top:8px;">Deposit</button>
+            <p style="text-align:center;font-size:12px;color:#94a3b8;margin-top:10px;">🔒 All deposits are encrypted and secured by SSL</p>
           </div>
-          <div id="depositMsg" class="trade-message" style="display:none"></div>
-          <button class="btn-blue" onclick="submitDeposit()" id="depositBtn">Submit Deposit Request</button>
-        </div>
-        <div class="finance-info">
-          <div class="info-card">
-            <h4>Processing Times</h4>
-            <div class="info-row"><span>Bank Transfer</span><span>1-3 business days</span></div>
-            <div class="info-row"><span>Credit/Debit Card</span><span>Instant - 2 hours</span></div>
-            <div class="info-row"><span>Crypto</span><span>1-3 confirmations</span></div>
-            <div class="info-row"><span>Skrill/Neteller</span><span>Instant</span></div>
-          </div>
-          <div class="info-card">
-            <h4>Deposit Limits</h4>
-            <div class="info-row"><span>Minimum</span><span>$100</span></div>
-            <div class="info-row"><span>Maximum per txn</span><span>$100,000</span></div>
-            <div class="info-row"><span>Daily limit</span><span>Unlimited</span></div>
+          <div class="finance-info">
+            <div class="info-card">
+              <h4>Processing Times</h4>
+              <div class="info-row"><span>Bank Transfer</span><span>1-3 business days</span></div>
+              <div class="info-row"><span>Card Payment</span><span>Instant – 2 hours</span></div>
+              <div class="info-row"><span>Cryptocurrency</span><span>1-3 confirmations</span></div>
+              <div class="info-row"><span>UPI</span><span>Instant – 30 min</span></div>
+            </div>
+            <div class="info-card">
+              <h4>Deposit Limits</h4>
+              <div class="info-row"><span>Minimum</span><span class="text-green">$100</span></div>
+              <div class="info-row"><span>Maximum (single)</span><span>$100,000</span></div>
+              <div class="info-row"><span>Daily limit</span><span>Unlimited</span></div>
+            </div>
+            <div class="info-card">
+              <h4>🔒 Security</h4>
+              <div class="info-row" style="flex-direction:column;gap:6px;">
+                <span style="font-size:12px;color:#64748b;">✓ 256-bit SSL encryption</span>
+                <span style="font-size:12px;color:#64748b;">✓ PCI DSS Level 1 compliant</span>
+                <span style="font-size:12px;color:#64748b;">✓ Funds in segregated accounts</span>
+                <span style="font-size:12px;color:#64748b;">✓ 3D Secure card verification</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
