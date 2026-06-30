@@ -309,8 +309,16 @@ input, select, textarea, button { font-family: 'Inter', sans-serif; }
 .upi-id-box { background: white; border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
 
 /* Promo */
-.promo-section { margin: 18px 0; border: 1px dashed var(--border); border-radius: 10px; padding: 14px 16px; }
-.promo-toggle { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--blue); user-select: none; }
+.promo-section { margin: 18px 0; border: 1px solid var(--border); border-radius: 14px; padding: 18px; background: var(--bg3); }
+.promo-advisory { display: flex; gap: 14px; align-items: flex-start; }
+.promo-advisory-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.promo-advisory-body { flex: 1; }
+.promo-advisory-title { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 8px; font-family: 'Space Grotesk',sans-serif; }
+.promo-advisory-text { font-size: 13px; color: var(--text2); line-height: 1.75; margin-bottom: 14px; }
+.promo-advisory-text strong { color: var(--blue); font-weight: 700; }
+.promo-contact-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; background: var(--blue); border-radius: 8px; color: white; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s; }
+.promo-contact-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+.promo-toggle { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--blue); user-select: none; padding-top: 4px; border-top: 1px dashed var(--border); }
 
 /* Responsive */
 @media (max-width: 1100px) { .trade-layout { grid-template-columns: 1fr; } .trade-right { display: none; } }
