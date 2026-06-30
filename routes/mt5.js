@@ -1,11 +1,11 @@
 const express  = require('express');
 const router   = express.Router();
-const { authClient } = require('../middleware/auth');
+const { authenticateClient } = require('../middleware/auth');
 const db       = require('../database/db');
 const mt5      = require('../mt5/manager');
 
 // GET /api/mt5/account — live balance, equity, positions from MT5
-router.get('/account', authClient, async (req, res) => {
+router.get('/account', authenticateClient, async (req, res) => {
   try {
     const user = await db.users.findOne({ _id: req.user.id });
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -94,7 +94,7 @@ router.get('/account', authClient, async (req, res) => {
 });
 
 // GET /api/mt5/history?from=&to= — closed trade history
-router.get('/history', authClient, async (req, res) => {
+router.get('/history', authenticateClient, async (req, res) => {
   try {
     if (!mt5.isReady()) return res.json({ live: false, deals: [] });
     const deals = await mt5.getDealHistory(req.query.from, req.query.to);
@@ -120,7 +120,7 @@ router.get('/history', authClient, async (req, res) => {
 });
 
 // GET /api/mt5/status — quick check if MT5 is connected
-router.get('/status', authClient, (req, res) => {
+router.get('/status', authenticateClient, (req, res) => {
   res.json({ connected: mt5.isReady() });
 });
 
