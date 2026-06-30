@@ -291,4 +291,30 @@ router.post('/notify', authenticateAdmin, async (req, res) => {
   res.json({ message: 'Notification sent' });
 });
 
+// Link a client's MetaAPI account ID to their website user record
+// Admin does this once per client after creating their MT5 account in the Manager
+router.post('/users/:id/mt5', authenticateAdmin, async (req, res) => {
+  try {
+    const { mt5_login, mt5_account_id } = req.body;
+    if (!mt5_account_id) return res.status(400).json({ error: 'mt5_account_id required' });
+    await db.users.update({ _id: req.params.id }, {
+      $set: { mt5_login, mt5_account_id, mt5_linked_at: now() }
+    });
+    res.json({ message: 'MT5 account linked successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all MT5 accounts visible to the manager (via MetaAPI)
+router.get('/mt5/accounts', authenticateAdmin, async (req, res) => {
+  try {
+    const mt5 = require('../mt5/manager');
+    const accounts = await mt5.getAllClientAccounts();
+    res.json({ accounts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

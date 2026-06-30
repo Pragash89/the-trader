@@ -19,6 +19,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/client', require('./routes/client'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/mt5', require('./routes/mt5'));
+
+// Initialize MT5 connection (non-blocking — app starts even if MT5 is offline)
+const mt5Manager = require('./mt5/manager');
+mt5Manager.init().then(ok => {
+  if (ok) console.log('[MT5] Manager account ready');
+}).catch(err => console.error('[MT5] Startup error:', err.message));
 
 // WebSocket: real-time price streaming
 const clients = new Set();

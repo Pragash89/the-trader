@@ -56,7 +56,58 @@ async function loadDashboard() {
   initEquityChart();
   initMarketWatch();
   checkKYC();
+
+  // Overlay live MT5 data on top of stored values
+  loadMT5Account();
 }
+
+async function loadMT5Account() {
+  try {
+    const res = await fetch(`${API}/mt5/account`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const mt5 = await res.json();
+    if (!mt5.live) return;
+
+    // Update metrics with real MT5 values
+    setElTxt('metricBalance',    '$' + fmt2(mt5.balance));
+    setElTxt('metricEquity',     '$' + fmt2(mt5.equity));
+    setElTxt('metricMargin',     '$' + fmt2(mt5.margin));
+    setElTxt('metricFreeMargin', '$' + fmt2(mt5.freeMargin));
+
+    // Show MT5 login in account number field
+    if (mt5.login) {
+      const el = document.getElementById('accNum');
+      if (el) el.textContent = `MT5: ${mt5.login}`;
+    }
+
+    // Replace positions with live MT5 data
+    if (mt5.positions && mt5.positions.length > 0) {
+      openTrades = mt5.positions.map(p => ({
+        _id: p.id,
+        symbol: p.symbol,
+        type: p.type,
+        volume: p.volume,
+        open_price: p.openPrice,
+        current_price: p.currentPrice,
+        profit: p.profit,
+        swap: p.swap || 0,
+        stop_loss: p.stopLoss || 0,
+        take_profit: p.takeProfit || 0,
+        open_time: p.openTime,
+        live: true,
+      }));
+      renderPositions();
+      renderMiniTrades();
+    }
+
+    // Show live badge
+    const badge = document.getElementById('mt5LiveBadge');
+    if (badge) { badge.style.display = 'inline-flex'; badge.textContent = `● LIVE · MT5 ${mt5.server || ''}`; }
+  } catch (e) { /* silent — MT5 may not be configured yet */ }
+}
+
+function fmt2(n) { return (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function setElTxt(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
 
 function renderUserInfo() {
   const u = userData;
