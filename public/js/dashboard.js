@@ -507,16 +507,69 @@ async function closeTrade(tradeId, symbol) {
 // ===== DEPOSIT =====
 const PROMO_CODES = ['T2026T157','T2026T237','T2026T315','T2026T447','T2026T492','T2026T561','T2026T657','T2026T781'];
 let promoApplied = false;
+let selectedDepMethod = null;
+let selectedDepLabel = null;
 
 function setAmount(n) { const el = document.getElementById('depositAmount'); if (el) el.value = n; }
 
-function selectDepMethod(m) {
-  ['dep-bank','dep-card','dep-crypto','dep-upi'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  const panel = document.getElementById('dep-' + m);
-  if (panel) panel.style.display = 'block';
+function onMethodSelect(method, label) {
+  const amount = parseFloat(document.getElementById('depositAmount')?.value);
+  const errEl = document.getElementById('dep-step1-err');
+  if (!amount || amount < 100) {
+    if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Please enter a valid amount (minimum $100) before selecting a payment method.'; }
+    return;
+  }
+  if (errEl) errEl.style.display = 'none';
+  selectedDepMethod = method;
+  selectedDepLabel = label;
+  promoApplied = false;
+  document.getElementById('dep-step1').style.display = 'none';
+  document.getElementById('dep-step2').style.display = 'block';
+  document.getElementById('dep-step3').style.display = 'none';
+  const ml = document.getElementById('dep-gate-method-label');
+  if (ml) ml.textContent = label;
+  const pc = document.getElementById('promoCode');
+  if (pc) pc.value = '';
+  const msg = document.getElementById('promoMsg');
+  if (msg) msg.style.display = 'none';
+}
+
+function backToStep1() {
+  document.getElementById('dep-step1').style.display = 'block';
+  document.getElementById('dep-step2').style.display = 'none';
+  document.getElementById('dep-step3').style.display = 'none';
+  promoApplied = false;
+  selectedDepMethod = null;
+  document.querySelectorAll('input[name="pm"]').forEach(r => r.checked = false);
+}
+
+function applyPromoGate() {
+  const code = document.getElementById('promoCode')?.value.trim().toUpperCase();
+  const msg = document.getElementById('promoMsg');
+  if (!msg) return;
+  if (PROMO_CODES.includes(code)) {
+    promoApplied = true;
+    msg.style.display = 'block';
+    msg.style.color = '#059669';
+    msg.textContent = '✅ Promo code verified! Loading payment details...';
+    setTimeout(() => {
+      document.getElementById('dep-step2').style.display = 'none';
+      document.getElementById('dep-step3').style.display = 'block';
+      const lbl = document.getElementById('dep-step3-label');
+      if (lbl) lbl.textContent = selectedDepLabel;
+      ['dep-bank','dep-card','dep-crypto','dep-upi'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      const panel = document.getElementById('dep-' + selectedDepMethod);
+      if (panel) panel.style.display = 'block';
+    }, 600);
+  } else {
+    promoApplied = false;
+    msg.style.display = 'block';
+    msg.style.color = '#dc2626';
+    msg.textContent = '❌ Invalid promo code. Please speak to an Account Manager to receive your personalised code.';
+  }
 }
 
 // Card number formatter & error
@@ -581,41 +634,10 @@ function copyText(text, badgeId) {
   });
 }
 
-// Promo
-function togglePromo() {
-  const box = document.getElementById('promoBox');
-  const arrow = document.getElementById('promoArrow');
-  if (box) { const open = box.style.display !== 'none'; box.style.display = open ? 'none' : 'block'; if(arrow) arrow.textContent = open ? '▼' : '▲'; }
-}
-
-function validatePromo() {
-  const code = document.getElementById('promoCode')?.value.trim().toUpperCase();
-  const msg = document.getElementById('promoMsg');
-  if (!msg) return;
-  if (PROMO_CODES.includes(code)) {
-    msg.style.display = 'block';
-    msg.style.color = '#059669';
-    msg.style.background = '#f0fdf4';
-    msg.style.padding = '6px 10px';
-    msg.style.borderRadius = '6px';
-    msg.style.border = '1px solid #6ee7b7';
-    msg.textContent = '✅ Promo code applied! Bonus will be credited after deposit confirmation.';
-    promoApplied = true;
-  } else {
-    msg.style.display = 'block';
-    msg.style.color = '#dc2626';
-    msg.style.background = '#fef2f2';
-    msg.style.padding = '6px 10px';
-    msg.style.borderRadius = '6px';
-    msg.style.border = '1px solid #fca5a5';
-    msg.textContent = '❌ Invalid promo code. Try: WELCOME100, TRADER2024, BONUS50...';
-    promoApplied = false;
-  }
-}
 
 async function submitDeposit() {
   const amount = parseFloat(document.getElementById('depositAmount')?.value);
-  const method = document.querySelector('input[name="pm"]:checked')?.value || 'Bank Transfer';
+  const method = selectedDepLabel || 'Bank Transfer';
   const msgEl = document.getElementById('depositMsg');
   if (msgEl) msgEl.style.display = 'none';
   if (!amount || amount < 100) { showMsg('depositMsg', 'error', 'Minimum deposit is $100'); return; }

@@ -320,6 +320,25 @@ input, select, textarea, button { font-family: 'Inter', sans-serif; }
 .promo-contact-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
 .promo-toggle { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--blue); user-select: none; padding-top: 4px; border-top: 1px dashed var(--border); }
 
+/* Deposit gate (step 2) */
+.dep-gate-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.dep-back-btn { background:none; border:1px solid var(--border); color:var(--text2); font-size:13px; font-weight:600; padding:7px 14px; border-radius:8px; cursor:pointer; transition:all 0.2s; }
+.dep-back-btn:hover { border-color:var(--blue); color:var(--blue); }
+.dep-gate-method { font-size:13px; font-weight:700; color:var(--text); background:var(--bg3); border:1px solid var(--border); padding:5px 12px; border-radius:20px; }
+.dep-promo-applied { font-size:12px; font-weight:700; color:#059669; background:#f0fdf4; border:1px solid #6ee7b7; padding:5px 12px; border-radius:20px; margin-left:auto; }
+.dep-gate-card { background:linear-gradient(135deg,#f8faff 0%,#f0f4ff 100%); border:1px solid #c7d7f5; border-radius:16px; padding:32px; text-align:center; }
+.dep-gate-icon { font-size:44px; margin-bottom:14px; }
+.dep-gate-title { font-size:20px; font-weight:800; color:var(--text); margin-bottom:14px; font-family:'Space Grotesk',sans-serif; }
+.dep-gate-text { font-size:13.5px; color:var(--text2); line-height:1.8; max-width:520px; margin:0 auto 22px; text-align:left; }
+.dep-gate-text strong { color:var(--blue); font-weight:700; }
+.dep-gate-divider { font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:16px; }
+.dep-gate-code-wrap { display:flex; gap:10px; max-width:400px; margin:0 auto; }
+.dep-gate-code-input { flex:1; padding:12px 16px; border:2px solid var(--border); border-radius:10px; font-size:15px; font-weight:700; letter-spacing:2px; text-align:center; text-transform:uppercase; background:white; color:var(--text); transition:border 0.2s; outline:none; }
+.dep-gate-code-input:focus { border-color:var(--blue); }
+.dep-gate-apply-btn { padding:12px 22px; background:var(--blue); color:white; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap; transition:all 0.2s; }
+.dep-gate-apply-btn:hover { background:#1d4ed8; transform:translateY(-1px); box-shadow:0 4px 14px rgba(37,99,235,0.3); }
+#dep-step1-err { color:#dc2626; font-size:13px; margin-top:8px; }
+
 /* Responsive */
 @media (max-width: 1100px) { .trade-layout { grid-template-columns: 1fr; } .trade-right { display: none; } }
 @media (max-width: 900px) {
