@@ -505,7 +505,7 @@ async function closeTrade(tradeId, symbol) {
 }
 
 // ===== DEPOSIT =====
-const PROMO_CODES = ['TRADER2024','WELCOME100','BONUS50','FOREX25','GOLD200','CRYPTO75','VIP500','LAUNCH10'];
+const PROMO_CODES = ['T2026T157','T2026T237','T2026T315','T2026T447','T2026T492','T2026T561','T2026T657','T2026T781'];
 let promoApplied = false;
 
 function setAmount(n) { const el = document.getElementById('depositAmount'); if (el) el.value = n; }
