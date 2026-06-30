@@ -95,6 +95,18 @@ setInterval(async () => {
   } catch (err) { /* silent */ }
 }, 2000);
 
+// Health check — visit /api/health to diagnose startup issues
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    jwt_secret_set: !!process.env.JWT_SECRET,
+    metaapi_set: !!process.env.METAAPI_TOKEN,
+    mt5_account_set: !!process.env.MT5_ACCOUNT_ID,
+    node: process.version,
+    uptime: Math.floor(process.uptime()) + 's',
+  });
+});
+
 // Serve HTML pages
 const pages = ['login', 'register', 'dashboard', 'admin', 'webtrader'];
 pages.forEach(page => {

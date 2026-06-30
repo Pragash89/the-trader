@@ -99,8 +99,8 @@ router.post('/login', async (req, res) => {
       user: { id: user._id, email: user.email, first_name: user.first_name, last_name: user.last_name, account_number: user.account_number, kyc_status: user.kyc_status, balance: user.balance }
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('[LOGIN ERROR]', err.message);
+    res.status(500).json({ error: 'Login failed', reason: err.message });
   }
 });
 
