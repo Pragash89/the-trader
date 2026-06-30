@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — The Trader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a href="/" class="sidebar-logo">
+      <div class="logo-icon">T</div>
+      <span>The<strong>Trader</strong></span>
+    </a>
+    <button class="sidebar-close" id="sidebarClose">✕</button>
+  </div>
+
+  <div class="account-mini" id="accountMini">
+    <div class="acc-avatar" id="accAvatar">–</div>
+    <div>
+      <div class="acc-name" id="accName">Loading...</div>
+      <div class="acc-num" id="accNum">–</div>
+    </div>
+    <div class="acc-status kyc-pending" id="kycBadge">Pending</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="nav-item active" data-page="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Overview
+    </button>
+    <button class="nav-item" data-page="trade">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 12l-6-6-4 4-3-3"/></svg>
+      Trade Now
+      <span class="nav-badge" id="openCount">0</span>
+    </button>
+    <button class="nav-item" data-page="positions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Positions
+    </button>
+    <button class="nav-item" data-page="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      History
+    </button>
+    <button class="nav-item" data-page="deposit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Deposit
+    </button>
+    <button class="nav-item" data-page="withdraw">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      Withdraw
+    </button>
+    <button class="nav-item" data-page="transactions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Transactions
+    </button>
+    <button class="nav-item" data-page="kyc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      KYC Verification
+    </button>
+    <a href="/webtrader" class="nav-item" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      WebTrader<span style="font-size:9px;background:#2563eb;color:white;padding:1px 5px;border-radius:8px;">NEW</span>
+    </a>
+    <button class="nav-item" data-page="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="nav-item logout-btn" id="logoutBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main-wrap">
+  <!-- Top bar -->
+  <header class="topbar">
+    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+    <div class="topbar-prices" id="topbarPrices">
+      <span class="tp-item"><span class="tp-sym">EUR/USD</span><span class="tp-price" id="tp-EURUSD">—</span></span>
+      <span class="tp-item"><span class="tp-sym">GBP/USD</span><span class="tp-price" id="tp-GBPUSD">—</span></span>
+      <span class="tp-item"><span class="tp-sym">XAU/USD</span><span class="tp-price" id="tp-XAUUSD">—</span></span>
+      <span class="tp-item"><span class="tp-sym">BTC/USD</span><span class="tp-price" id="tp-BTCUSD">—</span></span>
+    </div>
+    <div class="topbar-right">
+      <div class="notif-btn" id="notifBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </div>
+      <div class="user-chip" id="userChip">
+        <div class="user-chip-avatar" id="chipAvatar">–</div>
+        <span id="chipName">–</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notifications dropdown -->
+  <div class="notif-panel" id="notifPanel" style="display:none">
+    <div class="notif-header"><span>Notifications</span><button id="markReadBtn">Mark all read</button></div>
+    <div id="notifList"><div class="notif-empty">No notifications</div></div>
+  </div>
+
+  <!-- Pages -->
+  <main class="content">
+
+    <!-- Overview -->
+    <div id="page-overview" class="page active">
+      <div class="page-header">
+        <div>
+          <h2 id="overviewGreeting">Good morning!</h2>
+          <p class="page-sub">Here's your account overview</p>
+        </div>
+        <button class="btn-blue" onclick="showPage('trade')">+ New Trade</button>
+      </div>
+
+      <div class="kyc-banner" id="kycBanner" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><strong>KYC Verification Required</strong> — Complete your identity verification to enable trading and deposits.</div>
+        <button class="btn-kyc" onclick="showPage('kyc')">Verify Now →</button>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Account Balance</div>
+          <div class="metric-value" id="mBalance">$0.00</div>
+          <div class="metric-sub">Available funds</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Equity</div>
+          <div class="metric-value" id="mEquity">$0.00</div>
+          <div class="metric-sub">Balance + Open P&L</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Open P&L</div>
+          <div class="metric-value" id="mPnl">$0.00</div>
+          <div class="metric-sub positive" id="mPnlSub">Running positions</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Free Margin</div>
+          <div class="metric-value" id="mFreeMargin">$0.00</div>
+          <div class="metric-sub">Available for new trades</div>
+        </div>
+      </div>
+
+      <div class="overview-grid">
+        <div class="ov-card">
+          <div class="card-title">Open Positions <span id="posCount">(0)</span></div>
+          <div class="mini-trades" id="miniTrades"><div class="empty-state">No open positions</div></div>
+          <button class="view-all-btn" onclick="showPage('positions')">View All →</button>
+        </div>
+        <div class="ov-card">
+          <div class="card-title">Equity Chart</div>
+          <canvas id="equityChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <div class="ov-card mt16">
+        <div class="card-title">Recent Transactions</div>
+        <div id="recentTxns"><div class="empty-state">No transactions</div></div>
+      </div>
+    </div>
+
+    <!-- Trade Now -->
+    <div id="page-trade" class="page">
+      <div class="page-header">
+        <div><h2>Trade Now</h2><p class="page-sub">Open new positions in real-time markets</p></div>
+      </div>
+      <div class="trade-layout">
+        <div class="trade-form-card">
+          <h3>New Order</h3>
+          <div class="form-group">
+            <label>Symbol</label>
+            <select id="tradeSymbol" onchange="onSymbolChange()">
+              <optgroup label="Forex">
+                <option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option>
+                <option>AUDUSD</option><option>USDCHF</option><option>NZDUSD</option>
+                <option>USDCAD</option><option>EURJPY</option><option>GBPJPY</option><option>EURGBP</option>
+              </optgroup>
+              <optgroup label="Metals">
+                <option>XAUUSD</option><option>XAGUSD</option>
+              </optgroup>
+              <optgroup label="Indices">
+                <option>US30</option><option>US500</option><option>NAS100</option><option>GER40</option>
+              </optgroup>
+              <optgroup label="Crypto">
+                <option>BTCUSD</option><option>ETHUSD</option>
+              </optgroup>
+              <optgroup label="Energy">
+                <option>USOUSD</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="price-display" id="priceDisplay">
+            <div class="pd-bid"><div class="pd-label">BID</div><div class="pd-val" id="pdBid">—</div></div>
+            <div class="pd-spread"><div class="pd-label">SPREAD</div><div class="pd-val teal" id="pdSpread">—</div></div>
+            <div class="pd-ask"><div class="pd-label">ASK</div><div class="pd-val" id="pdAsk">—</div></div>
+          </div>
+          <div class="form-row2">
+            <div class="form-group">
+              <label>Volume (Lots)</label>
+              <input type="number" id="tradeVolume" value="0.10" min="0.01" max="100" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>Margin Required</label>
+              <input type="text" id="tradeMargin" readonly placeholder="—" style="color:#8ca0be">
+            </div>
+          </div>
+          <div class="form-row2">
+            <div class="form-group">
+              <label>Stop Loss</label>
+              <input type="number" id="tradeSL" placeholder="0 = no SL" step="0.00001">
+            </div>
+            <div class="form-group">
+              <label>Take Profit</label>
+              <input type="number" id="tradeTP" placeholder="0 = no TP" step="0.00001">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Comment (optional)</label>
+            <input type="text" id="tradeComment" placeholder="My trade">
+          </div>
+          <div class="trade-btns">
+            <button class="btn-sell" onclick="placeTrade('sell')">
+              SELL<br><span id="sellBtnPrice">—</span>
+            </button>
+            <button class="btn-buy" onclick="placeTrade('buy')">
+              BUY<br><span id="buyBtnPrice">—</span>
+            </button>
+          </div>
+          <div id="tradeMsg" class="trade-message" style="display:none"></div>
+        </div>
+
+        <div class="trade-right">
+          <div class="market-watch-card">
+            <h3>Market Watch</h3>
+            <div id="marketWatch"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Positions -->
+    <div id="page-positions" class="page">
+      <div class="page-header">
+        <div><h2>Open Positions</h2><p class="page-sub">Your active trades with live P&L</p></div>
+        <div class="header-stats">
+          <span>Total P&L: <strong id="totalPnlDisplay" class="pnl-val">$0.00</strong></span>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-wrap">
+          <table class="data-table" id="positionsTable">
+            <thead>
+              <tr>
+                <th>Ticket</th><th>Symbol</th><th>Type</th><th>Volume</th>
+                <th>Open Price</th><th>Current Price</th><th>S/L</th><th>T/P</th>
+                <th>P&L</th><th>Open Time</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="positionsBody">
+              <tr><td colspan="11" class="empty-state">No open positions</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="page-history" class="page">
+      <div class="page-header">
+        <div><h2>Trade History</h2><p class="page-sub">Your closed trades</p></div>
+      </div>
+      <div class="table-card">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ticket</th><th>Symbol</th><th>Type</th><th>Volume</th>
+                <th>Open Price</th><th>Close Price</th><th>P&L</th><th>Commission</th>
+                <th>Open Time</th><th>Close Time</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td colspan="10" class="empty-state">No trade history</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deposit -->
+    <div id="page-deposit" class="page">
+      <div class="page-header">
+        <div><h2>Deposit Funds</h2><p class="page-sub">Fund your trading account securely</p></div>
+      </div>
+      <div class="finance-layout">
+        <div class="finance-form-card">
+          <h3>New Deposit Request</h3>
+          <div class="amount-presets">
+            <button class="preset-btn" onclick="setAmount(500)">$500</button>
+            <button class="preset-btn" onclick="setAmount(1000)">$1,000</button>
+            <button class="preset-btn" onclick="setAmount(2500)">$2,500</button>
+            <button class="preset-btn" onclick="setAmount(5000)">$5,000</button>
+          </div>
+          <div class="form-group">
+            <label>Amount (USD)</label>
+            <input type="number" id="depositAmount" placeholder="Minimum $100" min="100">
+          </div>
+          <div class="form-group">
+            <label>Payment Method</label>
+            <div class="payment-methods" id="depositMethod">
+              <label class="pm-card">
+                <input type="radio" name="pm" value="Bank Transfer" checked>
+                <span class="pm-icon">🏦</span><span>Bank Transfer</span>
+              </label>
+              <label class="pm-card">
+                <input type="radio" name="pm" value="Credit/Debit Card">
+                <span class="pm-icon">💳</span><span>Credit Card</span>
+              </label>
+              <label class="pm-card">
+                <input type="radio" name="pm" value="Crypto">
+                <span class="pm-icon">₿</span><span>Crypto</span>
+              </label>
+              <label class="pm-card">
+                <input type="radio" name="pm" value="Skrill">
+                <span class="pm-icon">💱</span><span>Skrill</span>
+              </label>
+            </div>
+          </div>
+          <div id="depositMsg" class="trade-message" style="display:none"></div>
+          <button class="btn-blue" onclick="submitDeposit()" id="depositBtn">Submit Deposit Request</button>
+        </div>
+        <div class="finance-info">
+          <div class="info-card">
+            <h4>Processing Times</h4>
+            <div class="info-row"><span>Bank Transfer</span><span>1-3 business days</span></div>
+            <div class="info-row"><span>Credit/Debit Card</span><span>Instant - 2 hours</span></div>
+            <div class="info-row"><span>Crypto</span><span>1-3 confirmations</span></div>
+            <div class="info-row"><span>Skrill/Neteller</span><span>Instant</span></div>
+          </div>
+          <div class="info-card">
+            <h4>Deposit Limits</h4>
+            <div class="info-row"><span>Minimum</span><span>$100</span></div>
+            <div class="info-row"><span>Maximum per txn</span><span>$100,000</span></div>
+            <div class="info-row"><span>Daily limit</span><span>Unlimited</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Withdraw -->
+    <div id="page-withdraw" class="page">
+      <div class="page-header">
+        <div><h2>Withdraw Funds</h2><p class="page-sub">Withdraw your profits securely</p></div>
+      </div>
+      <div class="finance-layout">
+        <div class="finance-form-card">
+          <h3>Withdrawal Request</h3>
+          <div class="balance-display">Available Balance: <strong id="withdrawBalance">$0.00</strong></div>
+          <div class="form-group">
+            <label>Amount (USD)</label>
+            <input type="number" id="withdrawAmount" placeholder="Minimum $50" min="50">
+          </div>
+          <div class="form-group">
+            <label>Payment Method</label>
+            <div class="payment-methods">
+              <label class="pm-card">
+                <input type="radio" name="wpm" value="Bank Transfer" checked>
+                <span class="pm-icon">🏦</span><span>Bank Transfer</span>
+              </label>
+              <label class="pm-card">
+                <input type="radio" name="wpm" value="Crypto">
+                <span class="pm-icon">₿</span><span>Crypto</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Bank / Wallet Details</label>
+            <textarea id="withdrawNotes" rows="3" placeholder="Bank name, account number, IBAN or wallet address..." style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;color:white;font-family:Inter,sans-serif;font-size:14px;width:100%;resize:vertical;outline:none;"></textarea>
+          </div>
+          <div id="withdrawMsg" class="trade-message" style="display:none"></div>
+          <button class="btn-blue" onclick="submitWithdraw()" id="withdrawBtn">Submit Withdrawal</button>
+        </div>
+        <div class="finance-info">
+          <div class="info-card">
+            <h4>Withdrawal Info</h4>
+            <div class="info-row"><span>Minimum</span><span>$50</span></div>
+            <div class="info-row"><span>Processing</span><span>1-3 business days</span></div>
+            <div class="info-row"><span>Fee</span><span>Free</span></div>
+          </div>
+          <div class="info-card warn-card">
+            <h4>⚠️ Important</h4>
+            <p>Withdrawals must be made to an account in your name. Processing may require additional verification.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions -->
+    <div id="page-transactions" class="page">
+      <div class="page-header">
+        <div><h2>Transactions</h2><p class="page-sub">Your deposit and withdrawal history</p></div>
+      </div>
+      <div class="table-card">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Reference</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr>
+            </thead>
+            <tbody id="txnsBody">
+              <tr><td colspan="6" class="empty-state">No transactions</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- KYC -->
+    <div id="page-kyc" class="page">
+      <div class="page-header">
+        <div><h2>KYC Verification</h2><p class="page-sub">Verify your identity to unlock full trading</p></div>
+      </div>
+      <div class="kyc-layout">
+        <div class="kyc-steps-card">
+          <h3>Verification Steps</h3>
+          <div class="kyc-step-list" id="kycStepList">
+            <div class="kyc-step pending">
+              <div class="kstep-icon">📋</div>
+              <div><strong>Personal Information</strong><p>Basic profile details — completed at registration</p></div>
+              <div class="kstep-status approved">Done ✓</div>
+            </div>
+            <div class="kyc-step">
+              <div class="kstep-icon">🪪</div>
+              <div><strong>Government ID</strong><p>Passport, National ID, or Driver's License</p></div>
+              <div class="kstep-status" id="kstepId">Pending</div>
+            </div>
+            <div class="kyc-step">
+              <div class="kstep-icon">🏠</div>
+              <div><strong>Proof of Address</strong><p>Utility bill or bank statement (last 3 months)</p></div>
+              <div class="kstep-status" id="kstepAddr">Pending</div>
+            </div>
+          </div>
+        </div>
+        <div class="kyc-upload-card">
+          <h3>Upload Documents</h3>
+          <div class="form-group">
+            <label>Document Type</label>
+            <select id="kycDocType">
+              <option value="passport">Passport</option>
+              <option value="national_id">National ID</option>
+              <option value="drivers_license">Driver's License</option>
+              <option value="proof_of_address">Proof of Address</option>
+            </select>
+          </div>
+          <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">📁</div>
+            <p>Drag & drop your file here, or <label for="kycFile" class="upload-link">browse</label></p>
+            <p class="upload-hint">Supported: JPG, PNG, PDF (max 5MB)</p>
+            <input type="file" id="kycFile" accept=".jpg,.jpeg,.png,.pdf" style="display:none" onchange="uploadKYC()">
+          </div>
+          <div id="kycMsg" class="trade-message" style="display:none"></div>
+          <div class="kyc-note">
+            <strong>Why do we need this?</strong> KYC (Know Your Customer) is a legal requirement for all financial institutions. Your documents are encrypted and securely stored.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="page-settings" class="page">
+      <div class="page-header">
+        <div><h2>Account Settings</h2><p class="page-sub">Manage your profile</p></div>
+      </div>
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h3>Personal Information</h3>
+          <div class="form-group"><label>First Name</label><input type="text" id="setFirstName"></div>
+          <div class="form-group"><label>Last Name</label><input type="text" id="setLastName"></div>
+          <div class="form-group"><label>Email (read-only)</label><input type="text" id="setEmail" readonly style="opacity:0.5"></div>
+          <div class="form-group"><label>Phone</label><input type="tel" id="setPhone"></div>
+          <div class="form-group"><label>Address</label><input type="text" id="setAddress"></div>
+          <div class="form-group"><label>City</label><input type="text" id="setCity"></div>
+          <div id="settingsMsg" class="trade-message" style="display:none"></div>
+          <button class="btn-blue" onclick="saveProfile()">Save Changes</button>
+        </div>
+        <div class="settings-card">
+          <h3>Account Details</h3>
+          <div class="detail-row"><span>Account Number</span><strong id="detAccNum">—</strong></div>
+          <div class="detail-row"><span>MT5 Server</span><strong>TheTrader-Live01</strong></div>
+          <div class="detail-row"><span>Platform</span><strong>MetaTrader 5</strong></div>
+          <div class="detail-row"><span>Account Type</span><strong>Standard</strong></div>
+          <div class="detail-row"><span>Leverage</span><strong id="detLeverage">1:100</strong></div>
+          <div class="detail-row"><span>KYC Status</span><strong id="detKyc">Pending</strong></div>
+          <div class="detail-row"><span>Member Since</span><strong id="detSince">—</strong></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="overlay" id="overlay" style="display:none"></div>
+
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Trader — Professional Forex & CFD Broker</title>
+  <meta name="description" content="Trade Forex, CFDs, Gold, Crypto and more with The Trader. Ultra-tight spreads, MT5 platform, regulated and trusted.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/landing.css">
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar" id="navbar">
+  <div class="nav-container">
+    <a href="/" class="nav-logo">
+      <div class="logo-icon">T</div>
+      <span class="logo-text">The<strong>Trader</strong></span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#markets">Markets</a></li>
+      <li><a href="#platforms">Platforms</a></li>
+      <li><a href="#spreads">Spreads</a></li>
+      <li><a href="#why-us">Why Us</a></li>
+      <li><a href="#education">Education</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="/login" class="btn-outline">Login</a>
+      <a href="/register" class="btn-primary">Open Account</a>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Live Ticker -->
+<div class="ticker-bar">
+  <div class="ticker-track" id="tickerTrack">
+    <div class="ticker-item"><span class="pair">EUR/USD</span><span class="price" id="tick-EURUSD">1.08215</span><span class="change positive">+0.12%</span></div>
+    <div class="ticker-item"><span class="pair">GBP/USD</span><span class="price" id="tick-GBPUSD">1.27345</span><span class="change negative">-0.08%</span></div>
+    <div class="ticker-item"><span class="pair">USD/JPY</span><span class="price" id="tick-USDJPY">149.825</span><span class="change positive">+0.21%</span></div>
+    <div class="ticker-item"><span class="pair">XAU/USD</span><span class="price" id="tick-XAUUSD">2034.50</span><span class="change positive">+0.45%</span></div>
+    <div class="ticker-item"><span class="pair">BTC/USD</span><span class="price" id="tick-BTCUSD">43,250</span><span class="change negative">-1.23%</span></div>
+    <div class="ticker-item"><span class="pair">AUD/USD</span><span class="price" id="tick-AUDUSD">0.65185</span><span class="change positive">+0.09%</span></div>
+    <div class="ticker-item"><span class="pair">US30</span><span class="price" id="tick-US30">38,422</span><span class="change positive">+0.33%</span></div>
+    <div class="ticker-item"><span class="pair">NAS100</span><span class="price" id="tick-NAS100">17,651</span><span class="change positive">+0.61%</span></div>
+    <!-- Duplicate for seamless loop -->
+    <div class="ticker-item"><span class="pair">EUR/USD</span><span class="price">1.08215</span><span class="change positive">+0.12%</span></div>
+    <div class="ticker-item"><span class="pair">GBP/USD</span><span class="price">1.27345</span><span class="change negative">-0.08%</span></div>
+    <div class="ticker-item"><span class="pair">USD/JPY</span><span class="price">149.825</span><span class="change positive">+0.21%</span></div>
+    <div class="ticker-item"><span class="pair">XAU/USD</span><span class="price">2034.50</span><span class="change positive">+0.45%</span></div>
+    <div class="ticker-item"><span class="pair">BTC/USD</span><span class="price">43,250</span><span class="change negative">-1.23%</span></div>
+    <div class="ticker-item"><span class="pair">AUD/USD</span><span class="price">0.65185</span><span class="change positive">+0.09%</span></div>
+    <div class="ticker-item"><span class="pair">US30</span><span class="price">38,422</span><span class="change positive">+0.33%</span></div>
+    <div class="ticker-item"><span class="pair">NAS100</span><span class="price">17,651</span><span class="change positive">+0.61%</span></div>
+  </div>
+</div>
+
+<!-- Hero Section -->
+<section class="hero" id="home">
+  <div class="hero-bg">
+    <div class="hero-grid"></div>
+    <div class="hero-glow glow-1"></div>
+    <div class="hero-glow glow-2"></div>
+  </div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Live Markets · 19 Instruments · From 0.0 Pips
+      </div>
+      <h1 class="hero-title">
+        Trade the World's<br>
+        <span class="gradient-text">Financial Markets</span>
+      </h1>
+      <p class="hero-subtitle">
+        Access Forex, Gold, Indices, Crypto & more through our institutional-grade MT5 platform.
+        Ultra-tight spreads, lightning execution, and dedicated support.
+      </p>
+      <div class="hero-actions">
+        <a href="/register" class="btn-hero-primary">
+          Start Trading Free
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="#platforms" class="btn-hero-secondary">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.1)"/><path d="M10 8l6 4-6 4V8z" fill="white"/></svg>
+          See Platform
+        </a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Regulated & Secured</span>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          <span>24/5 Support</span>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <span>MT5 Platform</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="trading-card">
+        <div class="card-header">
+          <div class="card-symbol">
+            <div class="symbol-icon">€$</div>
+            <div><div class="symbol-name">EUR/USD</div><div class="symbol-sub">Euro / US Dollar</div></div>
+          </div>
+          <div class="card-badge buy">BUY</div>
+        </div>
+        <div class="card-price" id="heroPrice">1.08215</div>
+        <div class="card-chart">
+          <svg viewBox="0 0 300 80" preserveAspectRatio="none" id="heroChart">
+            <defs>
+              <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#00d4aa" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#00d4aa" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path id="chartArea" fill="url(#chartGrad)"/>
+            <path id="chartLine" fill="none" stroke="#00d4aa" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="card-stats">
+          <div class="stat"><div class="stat-label">Spread</div><div class="stat-value teal">0.1 pip</div></div>
+          <div class="stat"><div class="stat-label">Change</div><div class="stat-value positive" id="heroChange">+0.12%</div></div>
+          <div class="stat"><div class="stat-label">Leverage</div><div class="stat-value">1:100</div></div>
+        </div>
+        <div class="card-btns">
+          <button class="trade-btn sell">SELL<br><span id="heroBid">1.08210</span></button>
+          <button class="trade-btn buy">BUY<br><span id="heroAsk">1.08225</span></button>
+        </div>
+      </div>
+      <div class="floating-badge badge-clients">
+        <div class="badge-icon">👥</div>
+        <div><div class="badge-num">50,000+</div><div class="badge-label">Active Clients</div></div>
+      </div>
+      <div class="floating-badge badge-profit">
+        <div class="badge-icon">📈</div>
+        <div><div class="badge-num profit-green">+$2,847</div><div class="badge-label">Today's P&L</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" data-target="50000">0</div>
+        <div class="stat-plus">+</div>
+        <div class="stat-desc">Verified Clients</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="19">0</div>
+        <div class="stat-plus"></div>
+        <div class="stat-desc">Instruments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-prefix">$</div>
+        <div class="stat-num" data-target="2.4" data-decimal="1">0</div>
+        <div class="stat-suffix">B</div>
+        <div class="stat-desc">Monthly Volume</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="24">0</div>
+        <div class="stat-suffix">/5</div>
+        <div class="stat-desc">Support Hours</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-prefix"><0.</div>
+        <div class="stat-num" data-target="1" data-decimal="1">0</div>
+        <div class="stat-desc">Avg Spread (Pips)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="99.9" data-decimal="1">0</div>
+        <div class="stat-suffix">%</div>
+        <div class="stat-desc">Uptime Reliability</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Markets Section -->
+<section class="markets-section" id="markets">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">MARKETS</div>
+      <h2>Trade 19+ Instruments</h2>
+      <p>Access the world's most popular financial markets with competitive spreads and deep liquidity</p>
+    </div>
+    <div class="market-tabs">
+      <button class="tab-btn active" data-tab="forex">Forex</button>
+      <button class="tab-btn" data-tab="metals">Metals</button>
+      <button class="tab-btn" data-tab="indices">Indices</button>
+      <button class="tab-btn" data-tab="crypto">Crypto</button>
+      <button class="tab-btn" data-tab="energy">Energy</button>
+    </div>
+    <div class="market-table-wrap">
+      <table class="market-table">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Bid</th>
+            <th>Ask</th>
+            <th>Spread</th>
+            <th>Change</th>
+            <th>Leverage</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="marketTableBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Why Us -->
+<section class="why-section" id="why-us">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">WHY THE TRADER</div>
+      <h2>Your Edge in the Market</h2>
+      <p>Everything you need to trade with confidence</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon icon-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3>Lightning Execution</h3>
+        <p>Orders executed in under 10ms with our institutional-grade infrastructure and direct market access.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon icon-teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3>Regulated & Secure</h3>
+        <p>Client funds are held in segregated accounts at tier-1 banks. Your money is always protected.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon icon-gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>24/5 Expert Support</h3>
+        <p>Our multilingual trading experts are available around the clock, 5 days a week via live chat, email & phone.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon icon-purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/></svg>
+        </div>
+        <h3>Ultra-Tight Spreads</h3>
+        <p>Raw spreads from 0.0 pips on major pairs. No hidden fees, transparent pricing on all instruments.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon icon-red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3>Multi-Platform</h3>
+        <p>Trade on MT5 desktop, web browser, or mobile app. Access your account anytime, anywhere.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon icon-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <h3>Flexible Leverage</h3>
+        <p>Choose your preferred leverage up to 1:500 on major forex pairs, customized per instrument and risk profile.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Platforms Section -->
+<section class="platform-section" id="platforms">
+  <div class="container">
+    <div class="platform-grid">
+      <div class="platform-content">
+        <div class="section-label">TRADING PLATFORM</div>
+        <h2>MetaTrader 5 — The Professional's Choice</h2>
+        <p class="platform-desc">Trade with the world's most powerful trading platform. Advanced charting, Expert Advisors, and everything professional traders demand.</p>
+        <ul class="platform-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 6 pending order types & market orders</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 80+ built-in technical indicators</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Expert Advisors (auto-trading)</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Strategy tester & backtesting</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Real-time news & economic calendar</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Available on Windows, Mac, iOS & Android</li>
+        </ul>
+        <div class="platform-btns">
+          <a href="/register" class="btn-primary">Start Trading</a>
+          <a href="/register" class="btn-outline">Demo Account</a>
+        </div>
+      </div>
+      <div class="platform-visual">
+        <div class="platform-mockup">
+          <div class="mockup-header">
+            <div class="mockup-dots"><span></span><span></span><span></span></div>
+            <div class="mockup-title">TheTrader MT5 — EURUSD</div>
+          </div>
+          <div class="mockup-chart">
+            <svg viewBox="0 0 400 200" width="100%" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="mockGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#1e90ff" stop-opacity="0.2"/>
+                  <stop offset="100%" stop-color="#1e90ff" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- Candlesticks -->
+              <g id="candlesticks" fill="none"></g>
+              <!-- Area chart overlay -->
+              <path d="M0,150 C40,140 80,120 120,100 C160,80 200,90 240,70 C280,50 320,60 360,40 L400,35 L400,200 L0,200 Z" fill="url(#mockGrad)"/>
+              <path d="M0,150 C40,140 80,120 120,100 C160,80 200,90 240,70 C280,50 320,60 360,40 L400,35" fill="none" stroke="#1e90ff" stroke-width="2"/>
+              <!-- Grid lines -->
+              <line x1="0" y1="50" x2="400" y2="50" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+              <line x1="0" y1="100" x2="400" y2="100" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+              <line x1="0" y1="150" x2="400" y2="150" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            </svg>
+          </div>
+          <div class="mockup-orders">
+            <div class="mock-order buy"><span>BUY</span><span>0.10 EURUSD</span><span class="profit-green">+$24.50</span></div>
+            <div class="mock-order sell"><span>SELL</span><span>0.05 GBPUSD</span><span class="profit-red">-$8.20</span></div>
+            <div class="mock-order buy"><span>BUY</span><span>0.20 XAUUSD</span><span class="profit-green">+$142.80</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Spreads Section -->
+<section class="spreads-section" id="spreads">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">PRICING</div>
+      <h2>Ultra-Competitive Spreads</h2>
+      <p>Transparent pricing with no hidden costs</p>
+    </div>
+    <div class="account-types">
+      <div class="account-card">
+        <div class="account-badge">STANDARD</div>
+        <div class="account-name">Standard Account</div>
+        <div class="account-price"><span>$100</span> min deposit</div>
+        <ul class="account-features">
+          <li><span class="feat-label">Spreads from</span><span class="feat-val">1.0 pip</span></li>
+          <li><span class="feat-label">Commission</span><span class="feat-val">$0</span></li>
+          <li><span class="feat-label">Leverage</span><span class="feat-val">Up to 1:500</span></li>
+          <li><span class="feat-label">Min Trade</span><span class="feat-val">0.01 lot</span></li>
+          <li><span class="feat-label">Instruments</span><span class="feat-val">19+</span></li>
+          <li><span class="feat-label">EA Trading</span><span class="feat-val green">✓</span></li>
+        </ul>
+        <a href="/register" class="btn-account">Open Standard</a>
+      </div>
+      <div class="account-card featured">
+        <div class="account-badge gold">POPULAR</div>
+        <div class="account-name">Pro Account</div>
+        <div class="account-price"><span>$500</span> min deposit</div>
+        <ul class="account-features">
+          <li><span class="feat-label">Spreads from</span><span class="feat-val">0.1 pip</span></li>
+          <li><span class="feat-label">Commission</span><span class="feat-val">$3.5/lot</span></li>
+          <li><span class="feat-label">Leverage</span><span class="feat-val">Up to 1:500</span></li>
+          <li><span class="feat-label">Min Trade</span><span class="feat-val">0.01 lot</span></li>
+          <li><span class="feat-label">Instruments</span><span class="feat-val">19+</span></li>
+          <li><span class="feat-label">Priority Support</span><span class="feat-val green">✓</span></li>
+        </ul>
+        <a href="/register" class="btn-account gold">Open Pro</a>
+      </div>
+      <div class="account-card">
+        <div class="account-badge">VIP</div>
+        <div class="account-name">VIP Account</div>
+        <div class="account-price"><span>$5,000</span> min deposit</div>
+        <ul class="account-features">
+          <li><span class="feat-label">Spreads from</span><span class="feat-val">0.0 pip</span></li>
+          <li><span class="feat-label">Commission</span><span class="feat-val">$2.5/lot</span></li>
+          <li><span class="feat-label">Leverage</span><span class="feat-val">Up to 1:500</span></li>
+          <li><span class="feat-label">Min Trade</span><span class="feat-val">0.01 lot</span></li>
+          <li><span class="feat-label">Instruments</span><span class="feat-val">19+</span></li>
+          <li><span class="feat-label">Dedicated Manager</span><span class="feat-val green">✓</span></li>
+        </ul>
+        <a href="/register" class="btn-account">Open VIP</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Education Section -->
+<section class="education-section" id="education">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">EDUCATION</div>
+      <h2>Learn to Trade Like a Pro</h2>
+      <p>Free educational resources for traders of all levels</p>
+    </div>
+    <div class="edu-grid">
+      <div class="edu-card">
+        <div class="edu-icon">📊</div>
+        <h3>Trading Basics</h3>
+        <p>Learn the fundamentals of forex trading, market analysis, and risk management.</p>
+        <a href="#" class="edu-link">Learn More →</a>
+      </div>
+      <div class="edu-card">
+        <div class="edu-icon">📈</div>
+        <h3>Technical Analysis</h3>
+        <p>Master chart patterns, indicators, and price action strategies used by professionals.</p>
+        <a href="#" class="edu-link">Learn More →</a>
+      </div>
+      <div class="edu-card">
+        <div class="edu-icon">🧠</div>
+        <h3>Trading Psychology</h3>
+        <p>Develop the mindset required to trade consistently and manage emotions under pressure.</p>
+        <a href="#" class="edu-link">Learn More →</a>
+      </div>
+      <div class="edu-card">
+        <div class="edu-icon">🤖</div>
+        <h3>Automated Trading</h3>
+        <p>Get started with Expert Advisors and algorithmic trading on the MT5 platform.</p>
+        <a href="#" class="edu-link">Learn More →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="testimonials-section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">TESTIMONIALS</div>
+      <h2>Trusted by Traders Worldwide</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p>"The execution speed is incredible — I've never experienced such low latency fills. The spreads on majors are consistently tight even during news events."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">JM</div>
+          <div><div class="author-name">James Morrison</div><div class="author-title">Professional Trader, UK</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p>"Customer support is outstanding. They resolved my query within minutes. The platform is stable and the deposit process was seamless."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">SC</div>
+          <div><div class="author-name">Sophie Chen</div><div class="author-title">Swing Trader, Singapore</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p>"I've been trading for 8 years and The Trader is hands-down the best broker I've used. Low spreads, fast withdrawals, and a reliable MT5 connection."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">AM</div>
+          <div><div class="author-name">Ahmed Mohammed</div><div class="author-title">Fund Manager, UAE</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+  <div class="cta-bg"></div>
+  <div class="container">
+    <div class="cta-content">
+      <h2>Ready to Start Trading?</h2>
+      <p>Join thousands of traders who trust The Trader. Open a free account in minutes.</p>
+      <div class="cta-steps">
+        <div class="cta-step"><div class="step-num">1</div><div class="step-text">Register Free</div></div>
+        <div class="step-arrow">→</div>
+        <div class="cta-step"><div class="step-num">2</div><div class="step-text">Verify Identity</div></div>
+        <div class="step-arrow">→</div>
+        <div class="cta-step"><div class="step-num">3</div><div class="step-text">Fund Account</div></div>
+        <div class="step-arrow">→</div>
+        <div class="cta-step"><div class="step-num">4</div><div class="step-text">Start Trading</div></div>
+      </div>
+      <a href="/register" class="btn-cta">Open Free Account</a>
+      <div class="cta-note">No minimum deposit on demo • Real account from $100</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="nav-logo">
+          <div class="logo-icon">T</div>
+          <span class="logo-text">The<strong>Trader</strong></span>
+        </a>
+        <p>Professional Forex & CFD broker offering institutional-grade trading conditions to retail and professional clients worldwide.</p>
+        <div class="footer-socials">
+          <a href="#" aria-label="Twitter">𝕏</a>
+          <a href="#" aria-label="Facebook">f</a>
+          <a href="#" aria-label="LinkedIn">in</a>
+          <a href="#" aria-label="Telegram">✈</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Trading</h4>
+        <ul>
+          <li><a href="#markets">Forex</a></li>
+          <li><a href="#markets">Gold & Silver</a></li>
+          <li><a href="#markets">Indices</a></li>
+          <li><a href="#markets">Cryptocurrencies</a></li>
+          <li><a href="#markets">Energy</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Platforms</h4>
+        <ul>
+          <li><a href="#platforms">MetaTrader 5</a></li>
+          <li><a href="#platforms">Web Trader</a></li>
+          <li><a href="#platforms">Mobile App</a></li>
+          <li><a href="/register">Demo Account</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Regulation</a></li>
+          <li><a href="#">Legal Documents</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#education">Education</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-disclaimer">
+      <p><strong>Risk Warning:</strong> Trading in Forex/CFDs and other derivatives is highly speculative and carries a high level of risk. It is possible to lose all your capital. These products may not be suitable for everyone and you should ensure that you understand the risks involved. The Trader is a brand name of The Trader Ltd, a registered financial services provider.</p>
+      <div class="footer-bottom">
+        <span>© 2024 The Trader Ltd. All Rights Reserved.</span>
+        <span>
+          <a href="#">Privacy Policy</a> ·
+          <a href="#">Terms & Conditions</a> ·
+          <a href="#">Cookie Policy</a>
+        </span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/landing.js"></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Account — The Trader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <a href="/" class="auth-logo">
+        <div class="logo-icon">T</div>
+        <span>The<strong>Trader</strong></span>
+      </a>
+      <div class="auth-promo">
+        <h2>Start Trading in<br>3 Minutes</h2>
+        <p>Join 50,000+ traders already profiting with The Trader's ultra-tight spreads and fast execution.</p>
+        <div class="promo-features">
+          <div class="pf"><span class="pf-icon">✅</span><span>Free account — no minimum deposit</span></div>
+          <div class="pf"><span class="pf-icon">⚡</span><span>Instant account activation</span></div>
+          <div class="pf"><span class="pf-icon">📱</span><span>MT5 on desktop, web & mobile</span></div>
+          <div class="pf"><span class="pf-icon">🎓</span><span>Free trading education included</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form-wrap" style="max-width:480px">
+      <h1>Open Free Account</h1>
+      <p class="auth-sub">Already have an account? <a href="/login">Sign in</a></p>
+
+      <div id="authError" class="auth-alert error" style="display:none"></div>
+      <div id="authSuccess" class="auth-alert success" style="display:none"></div>
+
+      <!-- Step indicator -->
+      <div class="steps-indicator">
+        <div class="step-dot active" id="step1dot">1</div>
+        <div class="step-line"></div>
+        <div class="step-dot" id="step2dot">2</div>
+        <div class="step-line"></div>
+        <div class="step-dot" id="step3dot">3</div>
+      </div>
+
+      <!-- Step 1: Personal Info -->
+      <div id="step1" class="form-step">
+        <h3>Personal Information</h3>
+        <form class="auth-form" id="step1Form">
+          <div class="form-row2">
+            <div class="form-group">
+              <label>First Name *</label>
+              <input type="text" id="first_name" placeholder="John" required>
+            </div>
+            <div class="form-group">
+              <label>Last Name *</label>
+              <input type="text" id="last_name" placeholder="Smith" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input type="email" id="email" placeholder="john@example.com" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="phone" placeholder="+1 234 567 8900">
+          </div>
+          <div class="form-group">
+            <label>Country of Residence *</label>
+            <select id="country" required>
+              <option value="">Select country...</option>
+              <option>United States</option><option>United Kingdom</option>
+              <option>United Arab Emirates</option><option>Singapore</option>
+              <option>Australia</option><option>Canada</option>
+              <option>Germany</option><option>France</option>
+              <option>Japan</option><option>India</option>
+              <option>South Africa</option><option>Nigeria</option>
+              <option>Kenya</option><option>Philippines</option>
+              <option>Malaysia</option><option>Indonesia</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" id="date_of_birth">
+          </div>
+          <button type="button" class="btn-submit" onclick="goStep(2)">Continue →</button>
+        </form>
+      </div>
+
+      <!-- Step 2: Account Setup -->
+      <div id="step2" class="form-step" style="display:none">
+        <h3>Account Setup</h3>
+        <form class="auth-form" id="step2Form">
+          <div class="form-group">
+            <label>Create Password *</label>
+            <div class="input-wrap">
+              <input type="password" id="password" placeholder="Min 8 chars with number & symbol" required>
+              <button type="button" class="toggle-pass" onclick="togglePwd('password')">👁</button>
+            </div>
+            <div class="password-strength" id="pwdStrength"></div>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password *</label>
+            <input type="password" id="confirm_password" placeholder="Repeat password" required>
+          </div>
+          <div class="form-group">
+            <label>Account Type</label>
+            <select id="account_type">
+              <option value="standard">Standard — From $100</option>
+              <option value="pro">Pro — From $500 (raw spreads)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Preferred Leverage</label>
+            <select id="leverage">
+              <option value="50">1:50</option>
+              <option value="100" selected>1:100</option>
+              <option value="200">1:200</option>
+              <option value="500">1:500</option>
+            </select>
+          </div>
+          <div class="form-row-btns">
+            <button type="button" class="btn-back" onclick="goStep(1)">← Back</button>
+            <button type="button" class="btn-submit" onclick="goStep(3)">Continue →</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Step 3: Agreement & Submit -->
+      <div id="step3" class="form-step" style="display:none">
+        <h3>Agreements</h3>
+        <div class="agreement-box">
+          <p>By creating an account, you confirm that:</p>
+          <ul>
+            <li>You are 18 years or older</li>
+            <li>You understand the risks of trading Forex/CFDs</li>
+            <li>You agree to our Terms & Conditions and Privacy Policy</li>
+            <li>The information provided is accurate and truthful</li>
+          </ul>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label big">
+            <input type="checkbox" id="agreeTerms" required>
+            I agree to the <a href="#">Terms & Conditions</a> and <a href="#">Privacy Policy</a>
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="agreeRisk">
+            I have read and understand the Risk Disclosure
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="agreeMarketing">
+            I'd like to receive trading insights and promotions (optional)
+          </label>
+        </div>
+        <div class="form-row-btns">
+          <button type="button" class="btn-back" onclick="goStep(2)">← Back</button>
+          <button type="button" class="btn-submit" id="registerBtn" onclick="submitRegister()">
+            <span id="regText">Create Account</span>
+            <span id="regSpinner" class="spinner" style="display:none"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function goStep(n) {
+  // Validate before proceeding
+  if (n === 2) {
+    const fn = document.getElementById('first_name').value.trim();
+    const ln = document.getElementById('last_name').value.trim();
+    const em = document.getElementById('email').value.trim();
+    const co = document.getElementById('country').value;
+    if (!fn || !ln || !em || !co) { showError('Please fill all required fields.'); return; }
+    if (!/\S+@\S+\.\S+/.test(em)) { showError('Enter a valid email.'); return; }
+  }
+  if (n === 3) {
+    const pw = document.getElementById('password').value;
+    const pw2 = document.getElementById('confirm_password').value;
+    if (pw.length < 8) { showError('Password must be at least 8 characters.'); return; }
+    if (pw !== pw2) { showError('Passwords do not match.'); return; }
+  }
+  hideError();
+  [1,2,3].forEach(i => {
+    document.getElementById('step' + i).style.display = i === n ? 'block' : 'none';
+    const dot = document.getElementById('step' + i + 'dot');
+    dot.classList.toggle('active', i <= n);
+    dot.classList.toggle('done', i < n);
+  });
+}
+
+function togglePwd(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+document.getElementById('password')?.addEventListener('input', function() {
+  const v = this.value; let score = 0;
+  if (v.length >= 8) score++; if (/[A-Z]/.test(v)) score++; if (/[0-9]/.test(v)) score++; if (/[^A-Za-z0-9]/.test(v)) score++;
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  const colors = ['', '#ff4757', '#f0b429', '#1e90ff', '#00d4aa'];
+  const el = document.getElementById('pwdStrength');
+  if (el) { el.textContent = v ? labels[score] || 'Weak' : ''; el.style.color = colors[score] || '#ff4757'; }
+});
+
+function showError(msg) {
+  const el = document.getElementById('authError'); el.textContent = msg; el.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('authError').style.display = 'none';
+}
+
+async function submitRegister() {
+  if (!document.getElementById('agreeTerms').checked) { showError('You must agree to the Terms & Conditions.'); return; }
+
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true;
+  document.getElementById('regText').style.display = 'none';
+  document.getElementById('regSpinner').style.display = 'inline-block';
+  hideError();
+
+  const payload = {
+    first_name: document.getElementById('first_name').value.trim(),
+    last_name: document.getElementById('last_name').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    country: document.getElementById('country').value,
+    date_of_birth: document.getElementById('date_of_birth').value,
+    password: document.getElementById('password').value,
+  };
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+    const success = document.getElementById('authSuccess');
+    success.innerHTML = `<strong>🎉 Account Created!</strong><br>Your account number: <strong>${data.account_number}</strong><br>Redirecting to login...`;
+    success.style.display = 'block';
+    setTimeout(() => window.location.href = '/login', 3000);
+  } catch (err) {
+    showError(err.message);
+    btn.disabled = false;
+    document.getElementById('regText').style.display = '';
+    document.getElementById('regSpinner').style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>

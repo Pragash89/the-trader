@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — The Trader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <a href="/" class="auth-logo">
+        <div class="logo-icon">T</div>
+        <span>The<strong>Trader</strong></span>
+      </a>
+      <div class="auth-promo">
+        <h2>Welcome Back to<br>The Trader</h2>
+        <p>Access your trading dashboard, monitor positions, and manage your portfolio.</p>
+        <div class="promo-features">
+          <div class="pf"><span class="pf-icon">⚡</span><span>Lightning fast execution</span></div>
+          <div class="pf"><span class="pf-icon">🔒</span><span>Bank-level security</span></div>
+          <div class="pf"><span class="pf-icon">📊</span><span>Real-time market data</span></div>
+          <div class="pf"><span class="pf-icon">🏆</span><span>Award-winning platform</span></div>
+        </div>
+      </div>
+      <div class="auth-stats">
+        <div><div class="as-num">50K+</div><div class="as-label">Clients</div></div>
+        <div><div class="as-num">$2.4B</div><div class="as-label">Volume</div></div>
+        <div><div class="as-num">0.0</div><div class="as-label">Min Spread</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+      <h1>Sign In</h1>
+      <p class="auth-sub">New to The Trader? <a href="/register">Open a free account</a></p>
+
+      <div id="authError" class="auth-alert error" style="display:none"></div>
+
+      <form id="loginForm" class="auth-form">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="toggle-pass" id="togglePass">👁</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="remember"> Remember me
+          </label>
+          <a href="#" class="forgot-link">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-submit" id="loginBtn">
+          <span id="loginText">Sign In</span>
+          <span id="loginSpinner" class="spinner" style="display:none"></span>
+        </button>
+      </form>
+
+      <div class="auth-divider"><span>Demo Account</span></div>
+      <button class="btn-demo" id="demoBtn">Try Demo Account (No Registration)</button>
+
+      <div class="admin-link-wrap">
+        <a href="/admin" class="admin-link">Admin Panel →</a>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const text = document.getElementById('loginText');
+  const spinner = document.getElementById('loginSpinner');
+  const errorEl = document.getElementById('authError');
+
+  btn.disabled = true; text.style.display = 'none'; spinner.style.display = 'inline-block';
+  errorEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: document.getElementById('email').value, password: document.getElementById('password').value })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    localStorage.setItem('tt_token', data.token);
+    localStorage.setItem('tt_user', JSON.stringify(data.user));
+    window.location.href = '/dashboard';
+  } catch (err) {
+    errorEl.textContent = err.message; errorEl.style.display = 'block';
+    btn.disabled = false; text.style.display = ''; spinner.style.display = 'none';
+  }
+});
+
+document.getElementById('demoBtn').addEventListener('click', async () => {
+  document.getElementById('email').value = 'demo@thetrader.com';
+  document.getElementById('password').value = 'Demo@1234!';
+  document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+});
+
+document.getElementById('togglePass').addEventListener('click', () => {
+  const inp = document.getElementById('password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+});
+</script>
+</body>
+</html>
