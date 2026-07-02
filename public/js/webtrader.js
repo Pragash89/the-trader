@@ -223,15 +223,14 @@ function getBarTime(timestamp, tfMs) {
 
 const TF_MS = { '1m': 60000, '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000 };
 
-// Generate synthetic historical bars going back in time
+// Generate bars lazily — only for the symbol+TF currently needed
 function generateHistoricalData() {
-  SYMBOLS.forEach(({ sym }) => {
-    ohlcData[sym] = {};
-    Object.keys(TF_MS).forEach(tf => {
-      ohlcData[sym][tf] = generateBars(sym, tf);
-    });
-  });
   loadChartForSymbol(currentSymbol);
+}
+
+function ensureBars(sym, tf) {
+  if (!ohlcData[sym]) ohlcData[sym] = {};
+  if (!ohlcData[sym][tf]) ohlcData[sym][tf] = generateBars(sym, tf);
 }
 
 function generateBars(sym, tf) {
@@ -272,7 +271,7 @@ function getVolatility(sym) {
 }
 
 function loadChartForSymbol(sym) {
-  if (!ohlcData[sym] || !ohlcData[sym][currentTF]) return;
+  ensureBars(sym, currentTF);
   const bars = ohlcData[sym][currentTF];
   if (mainSeries && bars.length) {
     if (currentChartType === 'candlestick') {
@@ -293,7 +292,7 @@ function loadChartForSymbol(sym) {
 }
 
 function pushTick(sym, price) {
-  if (!ohlcData[sym]) ohlcData[sym] = {};
+  ensureBars(sym, currentTF);
   const tfMs = TF_MS[currentTF];
   const bars = ohlcData[sym][currentTF];
   if (!bars || !bars.length) return;

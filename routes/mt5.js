@@ -10,32 +10,23 @@ router.get('/account', authenticateClient, async (req, res) => {
     const user = await db.users.findOne({ _id: req.user.id });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    if (!mt5.isReady()) {
-      return res.json({
-        live: false,
-        balance: user.balance || 0,
-        equity: user.equity || 0,
-        margin: user.margin || 0,
-        freeMargin: user.free_margin || 0,
-        leverage: user.leverage || 100,
-        positions: [],
-        orders: [],
-      });
-    }
+    const fallback = {
+      live: false,
+      linked: !!user.mt5_login,
+      mt5_login: user.mt5_login || null,
+      balance: user.balance || 0,
+      equity: user.equity || 0,
+      margin: user.margin || 0,
+      freeMargin: user.free_margin || 0,
+      leverage: user.leverage || 100,
+      positions: [],
+      orders: [],
+    };
+
+    if (!mt5.isReady()) return res.json(fallback);
 
     const data = await mt5.getAccountSummary();
-    if (!data) {
-      return res.json({
-        live: false,
-        balance: user.balance || 0,
-        equity: user.equity || 0,
-        margin: user.margin || 0,
-        freeMargin: user.free_margin || 0,
-        leverage: user.leverage || 100,
-        positions: [],
-        orders: [],
-      });
-    }
+    if (!data) return res.json(fallback);
 
     const { info, positions, orders } = data;
 

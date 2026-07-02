@@ -111,11 +111,11 @@ function setElTxt(id, val) { const el = document.getElementById(id); if (el) el.
 
 // ===== MT5 ACCOUNT PAGE =====
 function showMT5Page() {
-  // Try to load live MT5 data and show connected panel if available
   fetch('/api/mt5/account', { headers: authHeaders() })
     .then(r => r.json())
     .then(mt5 => {
       if (mt5.live) {
+        // Full live data from MetaAPI
         document.getElementById('mt5-options-panel').style.display = 'none';
         document.getElementById('mt5-connected-panel').style.display = 'block';
         setElTxt('mt5-conn-login',    mt5.login || '—');
@@ -125,6 +125,17 @@ function showMT5Page() {
         setElTxt('mt5-conn-leverage', '1:' + (mt5.leverage || 100));
         setElTxt('mt5-conn-currency', mt5.currency || 'USD');
         if (mt5.server) setElTxt('mt5-conn-server', '● Connected to ' + mt5.server);
+      } else if (mt5.linked && mt5.mt5_login) {
+        // User submitted their MT5 login — pending admin verification
+        document.getElementById('mt5-options-panel').style.display = 'none';
+        document.getElementById('mt5-connected-panel').style.display = 'block';
+        setElTxt('mt5-conn-login',    mt5.mt5_login);
+        setElTxt('mt5-conn-name',     'Pending verification');
+        setElTxt('mt5-conn-balance',  '$' + fmt2(mt5.balance));
+        setElTxt('mt5-conn-equity',   '$' + fmt2(mt5.equity));
+        setElTxt('mt5-conn-leverage', '1:' + (mt5.leverage || 100));
+        setElTxt('mt5-conn-currency', 'USD');
+        setElTxt('mt5-conn-server', '⏳ Account submitted — admin will verify within 24h');
       } else {
         document.getElementById('mt5-options-panel').style.display = 'block';
         document.getElementById('mt5-connected-panel').style.display = 'none';
