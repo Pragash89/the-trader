@@ -124,4 +124,92 @@ router.get('/status', authenticateClient, (req, res) => {
   res.json({ connected: mt5.isReady() });
 });
 
+// POST /api/mt5/connect — link an existing MT5 account login to user profile
+router.post('/connect', authenticateClient, async (req, res) => {
+  try {
+    const { mt5_login, mt5_password } = req.body;
+    if (!mt5_login || !mt5_password) return res.status(400).json({ error: 'MT5 login and password are required' });
+
+    // Store the MT5 credentials on user record so we can link it
+    await db.users.update({ _id: req.user.id }, {
+      $set: {
+        mt5_login:    String(mt5_login),
+        mt5_password: mt5_password,
+        mt5_linked_at: new Date().toISOString(),
+      }
+    });
+
+    // Notify admin
+    const { v4: uuidv4 } = require('uuid');
+    const user = await db.users.findOne({ _id: req.user.id });
+    await db.notifications.insert({
+      _id: uuidv4().replace(/-/g,''),
+      user_id: null,
+      title: 'MT5 Account Link Request',
+      message: `${user.first_name} ${user.last_name} (${user.email}) submitted MT5 login ${mt5_login} for linking. Please verify and approve.`,
+      type: 'info',
+      read: false,
+      created_at: new Date().toISOString(),
+    });
+
+    res.json({ success: true, message: 'MT5 account submitted for linking. Admin will verify and activate within 24 hours.' });
+  } catch (err) {
+    console.error('[MT5 /connect]', err.message);
+    res.status(500).json({ error: 'Failed to submit MT5 connection' });
+  }
+});
+
+// POST /api/mt5/request — open a brand-new MT5 account request
+router.post('/request', authenticateClient, async (req, res) => {
+  try {
+    const { account_type, initial_deposit, notes } = req.body;
+    if (!initial_deposit || parseFloat(initial_deposit) < 100) {
+      return res.status(400).json({ error: 'Minimum initial deposit is $100' });
+    }
+
+    const { v4: uuidv4 } = require('uuid');
+    const user = await db.users.findOne({ _id: req.user.id });
+    const reqId = uuidv4().replace(/-/g,'');
+
+    // Store request in transactions collection as a pending record
+    await db.transactions.insert({
+      _id: reqId,
+      user_id: req.user.id,
+      type: 'mt5_account_request',
+      account_type: account_type || 'standard',
+      amount: parseFloat(initial_deposit),
+      notes: notes || '',
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    });
+
+    // Admin notification
+    await db.notifications.insert({
+      _id: uuidv4().replace(/-/g,''),
+      user_id: null,
+      title: 'New MT5 Account Request',
+      message: `${user.first_name} ${user.last_name} (${user.email}) requested a ${account_type || 'standard'} MT5 account with $${initial_deposit} initial deposit. Notes: ${notes || 'None'}`,
+      type: 'info',
+      read: false,
+      created_at: new Date().toISOString(),
+    });
+
+    // Client confirmation notification
+    await db.notifications.insert({
+      _id: uuidv4().replace(/-/g,''),
+      user_id: req.user.id,
+      title: 'MT5 Account Request Submitted',
+      message: `Your request for a ${account_type || 'standard'} MT5 account with $${initial_deposit} initial deposit has been received. Our team will contact you within 24 hours.`,
+      type: 'success',
+      read: false,
+      created_at: new Date().toISOString(),
+    });
+
+    res.json({ success: true, request_id: reqId });
+  } catch (err) {
+    console.error('[MT5 /request]', err.message);
+    res.status(500).json({ error: 'Failed to submit account request' });
+  }
+});
+
 module.exports = router;

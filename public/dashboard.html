@@ -64,6 +64,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       KYC Verification
     </button>
+    <button class="nav-item" data-page="mt5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8l3 3 2-2 3 4"/></svg>
+      MT5 Account
+    </button>
     <a href="/webtrader" class="nav-item" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
       WebTrader<span style="font-size:9px;background:#2563eb;color:white;padding:1px 5px;border-radius:8px;">NEW</span>
@@ -675,6 +679,103 @@
           <div class="detail-row"><span>Leverage</span><strong id="detLeverage">1:100</strong></div>
           <div class="detail-row"><span>KYC Status</span><strong id="detKyc">Pending</strong></div>
           <div class="detail-row"><span>Member Since</span><strong id="detSince">—</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MT5 Account -->
+    <div id="page-mt5" class="page">
+      <div class="page-header">
+        <div><h2>MT5 Account</h2><p class="page-sub">Connect or open a live MetaTrader 5 trading account</p></div>
+      </div>
+
+      <!-- Connected account panel (shown when mt5 is linked) -->
+      <div id="mt5-connected-panel" style="display:none;">
+        <div class="finance-layout">
+          <div class="finance-form-card">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+              <div style="width:44px;height:44px;background:#064e3b;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;">📡</div>
+              <div>
+                <div style="font-weight:800;font-size:16px;color:var(--text);">Live MT5 Connected</div>
+                <div id="mt5-conn-server" style="font-size:12px;color:#059669;font-weight:600;">● Connected to Fxcentrum Real-Live</div>
+              </div>
+            </div>
+            <div class="bank-details-table">
+              <div class="bd-row"><span class="bd-label">MT5 Login</span><span class="bd-val" id="mt5-conn-login">—</span></div>
+              <div class="bd-row"><span class="bd-label">Account Name</span><span class="bd-val" id="mt5-conn-name">—</span></div>
+              <div class="bd-row"><span class="bd-label">Balance</span><span class="bd-val" id="mt5-conn-balance">—</span></div>
+              <div class="bd-row"><span class="bd-label">Equity</span><span class="bd-val" id="mt5-conn-equity">—</span></div>
+              <div class="bd-row"><span class="bd-label">Leverage</span><span class="bd-val" id="mt5-conn-leverage">—</span></div>
+              <div class="bd-row"><span class="bd-label">Currency</span><span class="bd-val" id="mt5-conn-currency">USD</span></div>
+            </div>
+            <div class="dep-note" style="margin-top:16px;">Your MT5 account data syncs automatically. Open trades appear in the Positions tab.</div>
+          </div>
+          <div class="finance-info">
+            <div class="info-card">
+              <h4>Live Trading</h4>
+              <div class="info-row"><span>Platform</span><span>MetaTrader 5</span></div>
+              <div class="info-row"><span>Server</span><span>Fxcentrum Real-Live</span></div>
+              <div class="info-row"><span>Execution</span><span>Market</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Not connected — show options -->
+      <div id="mt5-options-panel">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
+
+          <!-- Connect existing -->
+          <div class="finance-form-card">
+            <div style="font-size:28px;margin-bottom:12px;">🔗</div>
+            <h3 style="margin-bottom:8px;">Connect Existing MT5 Account</h3>
+            <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Already have an MT5 account with The Trader? Enter your login credentials to link it to your dashboard.</p>
+            <div class="form-group">
+              <label>MT5 Login Number</label>
+              <input type="number" id="mt5LoginNum" placeholder="e.g. 10012345">
+            </div>
+            <div class="form-group">
+              <label>MT5 Password</label>
+              <input type="password" id="mt5LoginPass" placeholder="Your MT5 password">
+            </div>
+            <div id="mt5ConnectMsg" style="display:none;margin-bottom:12px;font-size:13px;padding:8px 12px;border-radius:8px;"></div>
+            <button class="btn-blue" onclick="connectMT5Account()" style="width:100%;padding:12px;">Connect Account</button>
+          </div>
+
+          <!-- Open new account -->
+          <div class="finance-form-card">
+            <div style="font-size:28px;margin-bottom:12px;">🚀</div>
+            <h3 style="margin-bottom:8px;">Open New MT5 Account</h3>
+            <p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Don't have an MT5 account yet? Request one and our team will open it for you within 24 hours.</p>
+            <div class="form-group">
+              <label>Account Type</label>
+              <select id="newAccType">
+                <option value="standard">Standard — 1:100 Leverage</option>
+                <option value="ecn">ECN Pro — 1:200 Leverage</option>
+                <option value="vip">VIP — 1:500 Leverage</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Initial Deposit (USD)</label>
+              <input type="number" id="newAccDeposit" placeholder="Minimum $100" min="100">
+            </div>
+            <div class="form-group">
+              <label>Notes (optional)</label>
+              <input type="text" id="newAccNotes" placeholder="Any specific requirements">
+            </div>
+            <div id="mt5OpenMsg" style="display:none;margin-bottom:12px;font-size:13px;padding:8px 12px;border-radius:8px;"></div>
+            <button class="btn-blue" onclick="requestMT5Account()" style="width:100%;padding:12px;background:#059669;">Request Account</button>
+          </div>
+        </div>
+
+        <div class="info-card" style="max-width:600px;">
+          <h4>What happens next?</h4>
+          <div class="info-row" style="flex-direction:column;gap:6px;">
+            <span style="font-size:13px;color:var(--text2);">1. Submit your request above</span>
+            <span style="font-size:13px;color:var(--text2);">2. Our team reviews and opens your MT5 account (within 24h)</span>
+            <span style="font-size:13px;color:var(--text2);">3. You receive your MT5 login credentials via email</span>
+            <span style="font-size:13px;color:var(--text2);">4. Come back and connect your account using the form above</span>
+          </div>
         </div>
       </div>
     </div>

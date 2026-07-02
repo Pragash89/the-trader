@@ -1,7 +1,7 @@
 /* ===== WEBTRADER.JS — TradingView Lightweight Charts ===== */
 'use strict';
 
-const token = localStorage.getItem('token');
+const token = localStorage.getItem('tt_token');
 if (!token) { window.location.href = '/login'; }
 
 // ── State ──────────────────────────────────────────────────────────────────

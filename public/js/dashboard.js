@@ -109,6 +109,91 @@ async function loadMT5Account() {
 function fmt2(n) { return (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function setElTxt(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
 
+// ===== MT5 ACCOUNT PAGE =====
+function showMT5Page() {
+  // Try to load live MT5 data and show connected panel if available
+  fetch('/api/mt5/account', { headers: authHeaders() })
+    .then(r => r.json())
+    .then(mt5 => {
+      if (mt5.live) {
+        document.getElementById('mt5-options-panel').style.display = 'none';
+        document.getElementById('mt5-connected-panel').style.display = 'block';
+        setElTxt('mt5-conn-login',    mt5.login || '—');
+        setElTxt('mt5-conn-name',     mt5.name  || '—');
+        setElTxt('mt5-conn-balance',  '$' + fmt2(mt5.balance));
+        setElTxt('mt5-conn-equity',   '$' + fmt2(mt5.equity));
+        setElTxt('mt5-conn-leverage', '1:' + (mt5.leverage || 100));
+        setElTxt('mt5-conn-currency', mt5.currency || 'USD');
+        if (mt5.server) setElTxt('mt5-conn-server', '● Connected to ' + mt5.server);
+      } else {
+        document.getElementById('mt5-options-panel').style.display = 'block';
+        document.getElementById('mt5-connected-panel').style.display = 'none';
+      }
+    }).catch(() => {
+      document.getElementById('mt5-options-panel').style.display = 'block';
+      document.getElementById('mt5-connected-panel').style.display = 'none';
+    });
+}
+
+async function connectMT5Account() {
+  const login = document.getElementById('mt5LoginNum')?.value.trim();
+  const password = document.getElementById('mt5LoginPass')?.value.trim();
+  const msgEl = document.getElementById('mt5ConnectMsg');
+  if (!login || !password) {
+    showMT5Msg('mt5ConnectMsg', 'error', 'Please enter your MT5 login number and password.');
+    return;
+  }
+  showMT5Msg('mt5ConnectMsg', 'info', 'Verifying your MT5 account...');
+  try {
+    const res = await fetch('/api/mt5/connect', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ mt5_login: login, mt5_password: password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Connection failed');
+    showMT5Msg('mt5ConnectMsg', 'success', '✅ MT5 account connected! Refreshing...');
+    setTimeout(() => showMT5Page(), 1500);
+  } catch (err) {
+    showMT5Msg('mt5ConnectMsg', 'error', '❌ ' + err.message);
+  }
+}
+
+async function requestMT5Account() {
+  const type    = document.getElementById('newAccType')?.value;
+  const deposit = parseFloat(document.getElementById('newAccDeposit')?.value);
+  const notes   = document.getElementById('newAccNotes')?.value || '';
+  if (!deposit || deposit < 100) {
+    showMT5Msg('mt5OpenMsg', 'error', 'Minimum initial deposit is $100.');
+    return;
+  }
+  showMT5Msg('mt5OpenMsg', 'info', 'Submitting your request...');
+  try {
+    const res = await fetch('/api/mt5/request', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ account_type: type, initial_deposit: deposit, notes })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    showMT5Msg('mt5OpenMsg', 'success', '✅ Request submitted! Our team will open your account within 24 hours and email your credentials.');
+    document.getElementById('newAccDeposit').value = '';
+    document.getElementById('newAccNotes').value = '';
+  } catch (err) {
+    showMT5Msg('mt5OpenMsg', 'error', '❌ ' + err.message);
+  }
+}
+
+function showMT5Msg(id, type, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.color = type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#2563eb';
+  el.style.background = type === 'success' ? '#f0fdf4' : type === 'error' ? '#fef2f2' : '#eff6ff';
+  el.style.border = `1px solid ${type === 'success' ? '#6ee7b7' : type === 'error' ? '#fca5a5' : '#bfdbfe'}`;
+  el.textContent = text;
+}
+
 function renderUserInfo() {
   const u = userData;
   const initials = (u.first_name[0] + u.last_name[0]).toUpperCase();
@@ -800,6 +885,7 @@ function showPage(page) {
   const navEl = document.querySelector(`[data-page="${page}"]`);
   if (navEl) navEl.classList.add('active');
   closeSidebar();
+  if (page === 'mt5') showMT5Page();
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(btn => {
