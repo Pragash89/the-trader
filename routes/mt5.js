@@ -153,44 +153,40 @@ router.post('/connect', authenticateClient, async (req, res) => {
 // POST /api/mt5/request — open a brand-new MT5 account request
 router.post('/request', authenticateClient, async (req, res) => {
   try {
-    const { account_type, initial_deposit, notes } = req.body;
-    if (!initial_deposit || parseFloat(initial_deposit) < 100) {
-      return res.status(400).json({ error: 'Minimum initial deposit is $100' });
-    }
+    const { account_type, notes } = req.body;
+    const type = account_type || 'standard';
+    const minDeposit = { standard: 200, pro: 2500, vip: 10000 }[type] || 200;
 
     const { v4: uuidv4 } = require('uuid');
     const user = await db.users.findOne({ _id: req.user.id });
     const reqId = uuidv4().replace(/-/g,'');
 
-    // Store request in transactions collection as a pending record
     await db.transactions.insert({
       _id: reqId,
       user_id: req.user.id,
       type: 'mt5_account_request',
-      account_type: account_type || 'standard',
-      amount: parseFloat(initial_deposit),
+      account_type: type,
+      min_deposit: minDeposit,
       notes: notes || '',
       status: 'pending',
       created_at: new Date().toISOString(),
     });
 
-    // Admin notification
     await db.notifications.insert({
       _id: uuidv4().replace(/-/g,''),
       user_id: null,
-      title: 'New MT5 Account Request',
-      message: `${user.first_name} ${user.last_name} (${user.email}) requested a ${account_type || 'standard'} MT5 account with $${initial_deposit} initial deposit. Notes: ${notes || 'None'}`,
+      title: 'New Trading Account Request',
+      message: `${user.first_name} ${user.last_name} (${user.email}) requested a ${type} account (min. $${minDeposit}). Notes: ${notes || 'None'}`,
       type: 'info',
       read: false,
       created_at: new Date().toISOString(),
     });
 
-    // Client confirmation notification
     await db.notifications.insert({
       _id: uuidv4().replace(/-/g,''),
       user_id: req.user.id,
-      title: 'MT5 Account Request Submitted',
-      message: `Your request for a ${account_type || 'standard'} MT5 account with $${initial_deposit} initial deposit has been received. Our team will contact you within 24 hours.`,
+      title: 'Trading Account Request Submitted',
+      message: `Your ${type} account request has been received. Our team will open your MT5 account within 24 hours and email your login credentials. Minimum deposit for ${type}: $${minDeposit}.`,
       type: 'success',
       read: false,
       created_at: new Date().toISOString(),

@@ -43,22 +43,6 @@ router.post('/register', async (req, res) => {
       created_at: now,
     });
 
-    await db.accounts.insert({
-      _id: uuidv4().replace(/-/g,''),
-      user_id: userId,
-      account_number: mt5Number,
-      account_type: 'standard',
-      currency: 'USD',
-      balance: 0,
-      equity: 0,
-      margin: 0,
-      leverage: 100,
-      server: 'TheTrader-Live01',
-      platform: 'MT5',
-      status: 'active',
-      created_at: now,
-    });
-
     await db.notifications.insert({
       _id: uuidv4().replace(/-/g,''),
       user_id: userId,

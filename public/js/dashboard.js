@@ -63,47 +63,41 @@ async function loadDashboard() {
 
 async function loadMT5Account() {
   try {
-    const res = await fetch(`${API}/mt5/account`, { headers: authHeaders() });
+    const res = await fetch('/api/mt5/account', { headers: authHeaders() });
     if (!res.ok) return;
     const mt5 = await res.json();
-    if (!mt5.live) return;
-
-    // Update metrics with real MT5 values
-    setElTxt('metricBalance',    '$' + fmt2(mt5.balance));
-    setElTxt('metricEquity',     '$' + fmt2(mt5.equity));
-    setElTxt('metricMargin',     '$' + fmt2(mt5.margin));
-    setElTxt('metricFreeMargin', '$' + fmt2(mt5.freeMargin));
-
-    // Show MT5 login in account number field
-    if (mt5.login) {
-      const el = document.getElementById('accNum');
-      if (el) el.textContent = `MT5: ${mt5.login}`;
-    }
-
-    // Replace positions with live MT5 data
-    if (mt5.positions && mt5.positions.length > 0) {
-      openTrades = mt5.positions.map(p => ({
-        _id: p.id,
-        symbol: p.symbol,
-        type: p.type,
-        volume: p.volume,
-        open_price: p.openPrice,
-        current_price: p.currentPrice,
-        profit: p.profit,
-        swap: p.swap || 0,
-        stop_loss: p.stopLoss || 0,
-        take_profit: p.takeProfit || 0,
-        open_time: p.openTime,
-        live: true,
-      }));
-      renderPositions();
-      renderMiniTrades();
-    }
-
-    // Show live badge
     const badge = document.getElementById('mt5LiveBadge');
-    if (badge) { badge.style.display = 'inline-flex'; badge.textContent = `● LIVE · MT5 ${mt5.server || ''}`; }
-  } catch (e) { /* silent — MT5 may not be configured yet */ }
+
+    if (mt5.live) {
+      // Full live data from MetaAPI — override all overview metrics
+      setElTxt('metricBalance',    '$' + fmt2(mt5.balance));
+      setElTxt('metricEquity',     '$' + fmt2(mt5.equity));
+      setElTxt('metricMargin',     '$' + fmt2(mt5.margin));
+      setElTxt('metricFreeMargin', '$' + fmt2(mt5.freeMargin));
+      if (mt5.login) { const el = document.getElementById('accNum'); if (el) el.textContent = `MT5: ${mt5.login}`; }
+      if (mt5.positions && mt5.positions.length > 0) {
+        openTrades = mt5.positions.map(p => ({
+          _id: p.id, symbol: p.symbol, type: p.type, volume: p.volume,
+          open_price: p.openPrice, current_price: p.currentPrice, profit: p.profit,
+          swap: p.swap || 0, stop_loss: p.stopLoss || 0, take_profit: p.takeProfit || 0,
+          open_time: p.openTime, live: true,
+        }));
+        renderPositions();
+        renderMiniTrades();
+      }
+      if (badge) { badge.style.display = 'inline-flex'; badge.textContent = `● LIVE · MT5 ${mt5.server || ''}`; }
+
+    } else if (mt5.linked && mt5.mt5_login) {
+      // Account linked but pending admin verification — show pending badge
+      if (badge) { badge.style.display = 'inline-flex'; badge.style.background = '#92400e'; badge.textContent = `⏳ MT5 ${mt5.mt5_login} · Pending Verification`; }
+      // Clear demo balance from overview so it's not misleading
+      setElTxt('metricBalance',    '$0.00');
+      setElTxt('metricEquity',     '$0.00');
+      setElTxt('metricFreeMargin', '$0.00');
+      const el = document.getElementById('accNum');
+      if (el) el.textContent = `MT5: ${mt5.mt5_login}`;
+    }
+  } catch (e) { /* silent */ }
 }
 
 function fmt2(n) { return (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -171,24 +165,18 @@ async function connectMT5Account() {
 }
 
 async function requestMT5Account() {
-  const type    = document.getElementById('newAccType')?.value;
-  const deposit = parseFloat(document.getElementById('newAccDeposit')?.value);
-  const notes   = document.getElementById('newAccNotes')?.value || '';
-  if (!deposit || deposit < 100) {
-    showMT5Msg('mt5OpenMsg', 'error', 'Minimum initial deposit is $100.');
-    return;
-  }
+  const type  = document.getElementById('newAccType')?.value;
+  const notes = document.getElementById('newAccNotes')?.value || '';
   showMT5Msg('mt5OpenMsg', 'info', 'Submitting your request...');
   try {
     const res = await fetch('/api/mt5/request', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ account_type: type, initial_deposit: deposit, notes })
+      body: JSON.stringify({ account_type: type, notes })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Request failed');
-    showMT5Msg('mt5OpenMsg', 'success', '✅ Request submitted! Our team will open your account within 24 hours and email your credentials.');
-    document.getElementById('newAccDeposit').value = '';
+    showMT5Msg('mt5OpenMsg', 'success', '✅ Account request submitted! Our team will open your MT5 account within 24 hours and email your login credentials.');
     document.getElementById('newAccNotes').value = '';
   } catch (err) {
     showMT5Msg('mt5OpenMsg', 'error', '❌ ' + err.message);
