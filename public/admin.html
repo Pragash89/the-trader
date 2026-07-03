@@ -60,6 +60,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         KYC Review <span class="nav-badge" id="kycCount">0</span>
       </button>
+      <button class="nav-item" data-page="account-requests">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8l3 3 2-2 3 4"/></svg>
+        MT5 Requests <span class="nav-badge" id="mt5ReqCount">0</span>
+      </button>
       <button class="nav-item" data-page="trades">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 12l-6-6-4 4-3-3"/></svg>
         Live Trades
@@ -227,6 +231,27 @@
         </div>
       </div>
 
+      <!-- MT5 Account Requests -->
+      <div id="page-account-requests" class="page">
+        <div class="page-header">
+          <div><h2>MT5 Account Requests</h2><p class="page-sub">Users who requested a new trading account — create in MT5 Manager then assign credentials here</p></div>
+          <button class="btn-blue" style="width:auto;margin:0" onclick="loadMT5Requests()">↻ Refresh</button>
+        </div>
+        <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#92400e;">
+          <strong>How to fulfill a request:</strong> 1) Open your MT5 Manager app → create the account manually → note the Login and Password.
+          2) Click <strong>Assign Credentials</strong> on the request below and enter those details.
+          3) The user will be notified and can immediately connect their account in the dashboard.
+        </div>
+        <div class="table-card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Client</th><th>Email</th><th>Account Type</th><th>Min. Deposit</th><th>Notes</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="mt5RequestsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Reports -->
       <div id="page-reports" class="page">
         <div class="page-header">
@@ -251,6 +276,39 @@
       <button onclick="closeModal()" class="modal-close">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Assign MT5 Credentials Modal -->
+<div id="mt5AssignModal" class="modal" style="display:none">
+  <div class="modal-overlay" onclick="closeMT5Modal()"></div>
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <h3>Assign MT5 Credentials</h3>
+      <button onclick="closeMT5Modal()" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:20px;">Enter the MT5 login credentials you created in your MT5 Manager. The user will be notified immediately.</p>
+      <input type="hidden" id="mt5ReqUserId">
+      <input type="hidden" id="mt5ReqTxnId">
+      <div class="form-group">
+        <label>MT5 Login Number</label>
+        <input type="number" id="mt5AssignLogin" placeholder="e.g. 10012345">
+      </div>
+      <div class="form-group">
+        <label>MT5 Password</label>
+        <input type="text" id="mt5AssignPassword" placeholder="Password you set in MT5 Manager">
+      </div>
+      <div class="form-group">
+        <label>MT5 Server</label>
+        <input type="text" id="mt5AssignServer" value="Fxcentrum-Real" placeholder="e.g. Fxcentrum-Real">
+      </div>
+      <div id="mt5AssignMsg" style="display:none;margin-bottom:12px;font-size:13px;padding:8px 12px;border-radius:8px;"></div>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button class="btn-blue" onclick="submitMT5Assign()" style="flex:1;padding:11px;">Assign & Notify User</button>
+        <button onclick="closeMT5Modal()" style="flex:0 0 80px;padding:11px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text)">Cancel</button>
+      </div>
+    </div>
   </div>
 </div>
 

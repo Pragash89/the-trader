@@ -73,6 +73,7 @@ async function initAdmin() {
         if (btn.dataset.page === 'clients') searchClients();
         if (btn.dataset.page === 'trades') loadTrades();
         if (btn.dataset.page === 'reports') loadReports();
+        if (btn.dataset.page === 'account-requests') loadMT5Requests();
       });
     });
 
@@ -130,6 +131,14 @@ async function loadAdminData() {
     if (s.pending_kyc) items.push(`<div class="pa-row"><div class="pa-icon kyc">🪪</div><span>${s.pending_kyc} KYC document(s) need review</span><button class="pa-btn" onclick="showPage('kyc');loadKyc()">Review</button></div>`);
     pa.innerHTML = items.join('') || '<div class="empty-state">No pending actions — all clear! ✅</div>';
   }
+
+  // Load MT5 request badge count
+  try {
+    const r2 = await fetch(`${API}/account-requests`, { headers: adminHeaders() });
+    const d2 = await r2.json();
+    const badge = document.getElementById('mt5ReqCount');
+    if (badge && d2.pending) badge.textContent = d2.pending;
+  } catch (e) {}
 }
 
 // ===== CLIENTS =====
@@ -425,6 +434,93 @@ function showPage(page) {
 }
 
 function closeModal() { document.getElementById('clientModal').style.display = 'none'; }
+
+// ===== MT5 ACCOUNT REQUESTS =====
+async function loadMT5Requests() {
+  try {
+    const res = await fetch(`${API}/account-requests`, { headers: adminHeaders() });
+    const data = await res.json();
+    const tbody = document.getElementById('mt5RequestsBody');
+    if (!tbody) return;
+
+    // Update badge
+    const badge = document.getElementById('mt5ReqCount');
+    if (badge) badge.textContent = data.pending || 0;
+
+    if (!data.requests || data.requests.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px;">No account requests yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.requests.map(r => `
+      <tr>
+        <td>${fmtDate(r.created_at)}</td>
+        <td>${r.user ? r.user.first_name + ' ' + r.user.last_name : '—'}<br><small style="color:var(--text2)">${r.user?.account_number || ''}</small></td>
+        <td>${r.user?.email || '—'}</td>
+        <td><span style="text-transform:capitalize;font-weight:600">${r.account_type || 'standard'}</span></td>
+        <td>$${(r.min_deposit || 200).toLocaleString()}</td>
+        <td style="max-width:160px;font-size:12px">${r.notes || '—'}</td>
+        <td><span class="status-badge ${r.status === 'fulfilled' ? 'approved' : r.status === 'pending' ? 'pending' : ''}">${r.status}</span></td>
+        <td>
+          ${r.status === 'pending' ? `
+            <button class="btn-act approve" onclick="openMT5AssignModal('${r.user_id}','${r._id}')">Assign Credentials</button>
+          ` : '<span style="color:#059669;font-size:12px">✅ Done</span>'}
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('[loadMT5Requests]', err);
+  }
+}
+
+function openMT5AssignModal(userId, txnId) {
+  document.getElementById('mt5ReqUserId').value = userId;
+  document.getElementById('mt5ReqTxnId').value = txnId;
+  document.getElementById('mt5AssignLogin').value = '';
+  document.getElementById('mt5AssignPassword').value = '';
+  document.getElementById('mt5AssignServer').value = 'Fxcentrum-Real';
+  document.getElementById('mt5AssignMsg').style.display = 'none';
+  document.getElementById('mt5AssignModal').style.display = 'flex';
+}
+
+function closeMT5Modal() { document.getElementById('mt5AssignModal').style.display = 'none'; }
+
+async function submitMT5Assign() {
+  const txnId    = document.getElementById('mt5ReqTxnId').value;
+  const mt5Login = document.getElementById('mt5AssignLogin').value.trim();
+  const mt5Pass  = document.getElementById('mt5AssignPassword').value.trim();
+  const mt5Srv   = document.getElementById('mt5AssignServer').value.trim();
+  const msgEl    = document.getElementById('mt5AssignMsg');
+
+  if (!mt5Login || !mt5Pass) {
+    showMT5AssignMsg('error', 'Enter MT5 login number and password.');
+    return;
+  }
+
+  try {
+    showMT5AssignMsg('info', 'Assigning...');
+    const res = await fetch(`${API}/account-requests/${txnId}/fulfill`, {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify({ mt5_login: mt5Login, mt5_password: mt5Pass, mt5_server: mt5Srv })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showMT5AssignMsg('success', '✅ Credentials assigned! User has been notified.');
+    setTimeout(() => { closeMT5Modal(); loadMT5Requests(); }, 1500);
+  } catch (err) {
+    showMT5AssignMsg('error', '❌ ' + err.message);
+  }
+}
+
+function showMT5AssignMsg(type, text) {
+  const el = document.getElementById('mt5AssignMsg');
+  el.style.display = 'block';
+  el.style.color = type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#2563eb';
+  el.style.background = type === 'success' ? '#f0fdf4' : type === 'error' ? '#fef2f2' : '#eff6ff';
+  el.style.border = `1px solid ${type === 'success' ? '#6ee7b7' : type === 'error' ? '#fca5a5' : '#bfdbfe'}`;
+  el.textContent = text;
+}
 
 // ===== HELPERS =====
 function setVal(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }

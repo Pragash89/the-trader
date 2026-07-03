@@ -291,6 +291,65 @@ router.post('/notify', authenticateAdmin, async (req, res) => {
   res.json({ message: 'Notification sent' });
 });
 
+// GET all MT5 account requests
+router.get('/account-requests', authenticateAdmin, async (req, res) => {
+  try {
+    const requests = await db.transactions.find({ type: 'mt5_account_request' });
+    requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const enriched = await Promise.all(requests.map(async r => {
+      const user = await db.users.findOne({ _id: r.user_id });
+      return { ...r, user: user ? { first_name: user.first_name, last_name: user.last_name, email: user.email, account_number: user.account_number } : null };
+    }));
+    res.json({ requests: enriched, pending: enriched.filter(r => r.status === 'pending').length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Fulfill an MT5 account request — assign login/password to user, notify them
+router.post('/account-requests/:txnId/fulfill', authenticateAdmin, async (req, res) => {
+  try {
+    const { mt5_login, mt5_password, mt5_server } = req.body;
+    if (!mt5_login || !mt5_password) return res.status(400).json({ error: 'MT5 login and password are required' });
+
+    const txn = await db.transactions.findOne({ _id: req.params.txnId });
+    if (!txn) return res.status(404).json({ error: 'Request not found' });
+    if (txn.status === 'fulfilled') return res.status(400).json({ error: 'Already fulfilled' });
+
+    // Link MT5 credentials to user
+    await db.users.update({ _id: txn.user_id }, {
+      $set: {
+        mt5_login: String(mt5_login),
+        mt5_password: mt5_password,
+        mt5_server: mt5_server || 'Fxcentrum-Real',
+        mt5_account_type: txn.account_type,
+        mt5_linked_at: now(),
+      }
+    });
+
+    // Mark request as fulfilled
+    await db.transactions.update({ _id: req.params.txnId }, {
+      $set: { status: 'fulfilled', fulfilled_at: now(), fulfilled_by: req.user?.email || 'admin' }
+    });
+
+    // Notify the user
+    await db.notifications.insert({
+      _id: uuidv4().replace(/-/g,''),
+      user_id: txn.user_id,
+      title: '🎉 Your MT5 Trading Account is Ready!',
+      message: `Your ${txn.account_type} MT5 account has been created. Login: ${mt5_login} | Server: ${mt5_server || 'Fxcentrum-Real'}. Go to Trading Accounts in your dashboard to connect it.`,
+      type: 'success',
+      read: false,
+      created_at: now(),
+    });
+
+    res.json({ success: true, message: 'MT5 credentials assigned and user notified' });
+  } catch (err) {
+    console.error('[admin /account-requests fulfill]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Link a client's MetaAPI account ID to their website user record
 // Admin does this once per client after creating their MT5 account in the Manager
 router.post('/users/:id/mt5', authenticateAdmin, async (req, res) => {
