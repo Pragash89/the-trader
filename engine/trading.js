@@ -1,112 +1,128 @@
-// Mock MT5 Trading Engine — simulates real-time forex prices and trade management
-// Replace price feeds with real MT5 API when budget allows
+// Mock trading engine — serverless-safe: prices are a pure, deterministic function
+// of wall-clock time (base trend + a couple of bounded sine waves + small per-second
+// jitter, all seeded from the symbol name). No setInterval, no in-memory state to
+// keep alive — any invocation, on any instance, at any time computes the same value,
+// which is what makes this safe to run as short-lived Vercel functions.
+// Replace with real MT5/broker price feeds when budget allows.
 
-const EventEmitter = require('events');
+const SYMBOLS = {
+  EURUSD: { base: 1.08215, digits: 5, point: 0.00001, contract: 100000, spread: 0.00015, bandPct: 0.0010 },
+  GBPUSD: { base: 1.27350, digits: 5, point: 0.00001, contract: 100000, spread: 0.00020, bandPct: 0.0012 },
+  USDJPY: { base: 149.827, digits: 3, point: 0.001,   contract: 100000, spread: 0.015,   bandPct: 0.0010 },
+  AUDUSD: { base: 0.65188, digits: 5, point: 0.00001, contract: 100000, spread: 0.00015, bandPct: 0.0012 },
+  USDCHF: { base: 0.90128, digits: 5, point: 0.00001, contract: 100000, spread: 0.00015, bandPct: 0.0009 },
+  USDCAD: { base: 1.36220, digits: 5, point: 0.00001, contract: 100000, spread: 0.00020, bandPct: 0.0011 },
+  NZDUSD: { base: 0.59880, digits: 5, point: 0.00001, contract: 100000, spread: 0.00020, bandPct: 0.0012 },
+  EURJPY: { base: 162.160, digits: 3, point: 0.001,   contract: 100000, spread: 0.020,   bandPct: 0.0012 },
+  GBPJPY: { base: 189.645, digits: 3, point: 0.001,   contract: 100000, spread: 0.030,   bandPct: 0.0014 },
+  EURGBP: { base: 0.85030, digits: 5, point: 0.00001, contract: 100000, spread: 0.00020, bandPct: 0.0008 },
+  XAUUSD: { base: 2034.75, digits: 2, point: 0.01,    contract: 100,    spread: 0.50,    bandPct: 0.0040 },
+  XAGUSD: { base: 22.465,  digits: 3, point: 0.001,   contract: 5000,   spread: 0.030,   bandPct: 0.0050 },
+  BTCUSD: { base: 43275.0, digits: 1, point: 0.1,     contract: 1,      spread: 50.0,    bandPct: 0.0060 },
+  ETHUSD: { base: 2288.5,  digits: 2, point: 0.01,    contract: 1,      spread: 2.0,     bandPct: 0.0070 },
+  USOUSD: { base: 78.465,  digits: 3, point: 0.001,   contract: 1000,   spread: 0.030,   bandPct: 0.0045 },
+  US30:   { base: 38422.5, digits: 1, point: 0.1,     contract: 1,      spread: 5.0,     bandPct: 0.0030 },
+  US500:  { base: 4985.0,  digits: 2, point: 0.01,    contract: 1,      spread: 1.0,     bandPct: 0.0030 },
+  NAS100: { base: 17651.5, digits: 1, point: 0.1,     contract: 1,      spread: 3.0,     bandPct: 0.0035 },
+  GER40:  { base: 17282.0, digits: 1, point: 0.1,     contract: 1,      spread: 4.0,     bandPct: 0.0032 },
+};
 
-class TradingEngine extends EventEmitter {
-  constructor() {
-    super();
-    this.prices = {
-      'EURUSD': { bid: 1.08210, ask: 1.08225, digits: 5, point: 0.00001, contract: 100000, spread: 1.5 },
-      'GBPUSD': { bid: 1.27340, ask: 1.27360, digits: 5, point: 0.00001, contract: 100000, spread: 2.0 },
-      'USDJPY': { bid: 149.820, ask: 149.835, digits: 3, point: 0.001, contract: 100000, spread: 1.5 },
-      'AUDUSD': { bid: 0.65180, ask: 0.65195, digits: 5, point: 0.00001, contract: 100000, spread: 1.5 },
-      'USDCHF': { bid: 0.90120, ask: 0.90135, digits: 5, point: 0.00001, contract: 100000, spread: 1.5 },
-      'USDCAD': { bid: 1.36210, ask: 1.36230, digits: 5, point: 0.00001, contract: 100000, spread: 2.0 },
-      'NZDUSD': { bid: 0.59870, ask: 0.59890, digits: 5, point: 0.00001, contract: 100000, spread: 2.0 },
-      'EURJPY': { bid: 162.150, ask: 162.170, digits: 3, point: 0.001, contract: 100000, spread: 2.5 },
-      'GBPJPY': { bid: 189.630, ask: 189.660, digits: 3, point: 0.001, contract: 100000, spread: 3.0 },
-      'EURGBP': { bid: 0.85020, ask: 0.85040, digits: 5, point: 0.00001, contract: 100000, spread: 2.0 },
-      'XAUUSD': { bid: 2034.50, ask: 2035.00, digits: 2, point: 0.01, contract: 100, spread: 50 },
-      'XAGUSD': { bid: 22.450, ask: 22.480, digits: 3, point: 0.001, contract: 5000, spread: 3.0 },
-      'BTCUSD': { bid: 43250.0, ask: 43300.0, digits: 1, point: 0.1, contract: 1, spread: 50 },
-      'ETHUSD': { bid: 2287.5, ask: 2289.5, digits: 2, point: 0.01, contract: 1, spread: 20 },
-      'USOUSD': { bid: 78.450, ask: 78.480, digits: 3, point: 0.001, contract: 1000, spread: 3.0 },
-      'US30':   { bid: 38420.0, ask: 38425.0, digits: 1, point: 0.1, contract: 1, spread: 5 },
-      'US500':  { bid: 4984.5, ask: 4985.5, digits: 2, point: 0.01, contract: 1, spread: 1.0 },
-      'NAS100': { bid: 17650.0, ask: 17653.0, digits: 1, point: 0.1, contract: 1, spread: 3.0 },
-      'GER40':  { bid: 17280.0, ask: 17284.0, digits: 1, point: 0.1, contract: 1, spread: 4.0 },
-    };
-
-    this.volatility = {
-      'EURUSD': 0.00005, 'GBPUSD': 0.00007, 'USDJPY': 0.005, 'AUDUSD': 0.00006,
-      'USDCHF': 0.00005, 'USDCAD': 0.00006, 'NZDUSD': 0.00006, 'EURJPY': 0.006,
-      'GBPJPY': 0.008, 'EURGBP': 0.00004, 'XAUUSD': 0.30, 'XAGUSD': 0.008,
-      'BTCUSD': 80.0, 'ETHUSD': 5.0, 'USOUSD': 0.05, 'US30': 15.0,
-      'US500': 2.0, 'NAS100': 20.0, 'GER40': 12.0,
-    };
-
-    this.ticketCounter = 100000;
-    this.startPriceEngine();
+function hash32(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
-
-  startPriceEngine() {
-    setInterval(() => {
-      const updates = {};
-      for (const [symbol, data] of Object.entries(this.prices)) {
-        const vol = this.volatility[symbol] || 0.0001;
-        // Gaussian-like random walk
-        const r1 = Math.random(), r2 = Math.random();
-        const gauss = Math.sqrt(-2 * Math.log(r1)) * Math.cos(2 * Math.PI * r2);
-        const change = gauss * vol * 0.3;
-        const spread = data.ask - data.bid;
-        const newBid = parseFloat((data.bid + change).toFixed(data.digits));
-        if (newBid > 0) {
-          this.prices[symbol].bid = newBid;
-          this.prices[symbol].ask = parseFloat((newBid + spread).toFixed(data.digits));
-          updates[symbol] = { bid: this.prices[symbol].bid, ask: this.prices[symbol].ask };
-        }
-      }
-      this.emit('prices', updates);
-    }, 800);
-  }
-
-  getPrice(symbol) {
-    return this.prices[symbol] || null;
-  }
-
-  getAllPrices() {
-    const result = {};
-    for (const [symbol, data] of Object.entries(this.prices)) {
-      result[symbol] = { bid: data.bid, ask: data.ask, digits: data.digits, spread: parseFloat((data.ask - data.bid).toFixed(data.digits)) };
-    }
-    return result;
-  }
-
-  getNextTicket() {
-    return ++this.ticketCounter;
-  }
-
-  calculateProfit(symbol, type, volume, openPrice, currentPrice) {
-    const data = this.prices[symbol];
-    if (!data) return 0;
-    let priceDiff = type === 'buy' ? currentPrice - openPrice : openPrice - currentPrice;
-    // For JPY pairs, pip value is different
-    let pipValue = 10; // USD per pip per standard lot
-    if (symbol.includes('JPY')) pipValue = 1000 / currentPrice * 10;
-    else if (symbol === 'XAUUSD') pipValue = 1;
-    else if (symbol === 'XAGUSD') pipValue = 50;
-    else if (symbol === 'BTCUSD' || symbol === 'ETHUSD') pipValue = volume;
-    else if (['US30','US500','NAS100','GER40'].includes(symbol)) pipValue = volume;
-    else if (symbol === 'USOUSD') pipValue = volume * 1000;
-    const profit = priceDiff * data.contract * volume;
-    return parseFloat(profit.toFixed(2));
-  }
-
-  getMarketInfo(symbol) {
-    const data = this.prices[symbol];
-    if (!data) return null;
-    return {
-      symbol,
-      bid: data.bid,
-      ask: data.ask,
-      digits: data.digits,
-      spread: parseFloat((data.ask - data.bid).toFixed(data.digits)),
-      contract_size: data.contract,
-      margin_required: (data.ask * data.contract * 0.01).toFixed(2),
-    };
-  }
+  return h >>> 0;
 }
 
-const engine = new TradingEngine();
-module.exports = engine;
+// mulberry32 — tiny deterministic PRNG; same seed always produces the same sequence.
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function () {
+    t = (t + 0x6D2B79F5) | 0;
+    let x = Math.imul(t ^ (t >>> 15), t | 1);
+    x = (x + Math.imul(x ^ (x >>> 7), x | 61)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const PERIOD_SLOW = 6 * 3600 * 1000;  // ~6h drift
+const PERIOD_MED   = 40 * 60 * 1000;  // ~40min swing
+const PERIOD_FAST  = 70 * 1000;       // ~70s ripple
+
+function computeBid(symbol, meta, tMs) {
+  const rnd = mulberry32(hash32(symbol));
+  const phase1 = rnd() * Math.PI * 2;
+  const phase2 = rnd() * Math.PI * 2;
+  const phase3 = rnd() * Math.PI * 2;
+
+  const band = meta.base * meta.bandPct;
+  const wave =
+    band * 0.50 * Math.sin((2 * Math.PI * tMs) / PERIOD_SLOW + phase1) +
+    band * 0.35 * Math.sin((2 * Math.PI * tMs) / PERIOD_MED + phase2) +
+    band * 0.15 * Math.sin((2 * Math.PI * tMs) / PERIOD_FAST + phase3);
+
+  const bucket = Math.floor(tMs / 1000);
+  const jrnd = mulberry32(hash32(symbol + ':' + bucket))();
+  const jitter = (jrnd * 2 - 1) * band * 0.04;
+
+  return parseFloat((meta.base + wave + jitter).toFixed(meta.digits));
+}
+
+function getPrice(symbol, atMs) {
+  const meta = SYMBOLS[symbol];
+  if (!meta) return null;
+  const t = atMs != null ? atMs : Date.now();
+  const bid = computeBid(symbol, meta, t);
+  const ask = parseFloat((bid + meta.spread).toFixed(meta.digits));
+  return { bid, ask, digits: meta.digits, point: meta.point, contract: meta.contract, spread: meta.spread };
+}
+
+function getAllPrices(atMs) {
+  const t = atMs != null ? atMs : Date.now();
+  const result = {};
+  for (const symbol of Object.keys(SYMBOLS)) {
+    const p = getPrice(symbol, t);
+    result[symbol] = { bid: p.bid, ask: p.ask, digits: p.digits, spread: parseFloat((p.ask - p.bid).toFixed(p.digits)) };
+  }
+  return result;
+}
+
+// Deterministic, collision-resistant-enough ticket number derived from a trade's
+// own id — no shared counter needed, so it's safe across serverless instances.
+function ticketFromId(id) {
+  const h = hash32(String(id));
+  return 100000 + (h % 900000);
+}
+
+function calculateProfit(symbol, type, volume, openPrice, currentPrice) {
+  const meta = SYMBOLS[symbol];
+  if (!meta) return 0;
+  const priceDiff = type === 'buy' ? currentPrice - openPrice : openPrice - currentPrice;
+  const profit = priceDiff * meta.contract * volume;
+  return parseFloat(profit.toFixed(2));
+}
+
+function getMarketInfo(symbol, atMs) {
+  const p = getPrice(symbol, atMs);
+  if (!p) return null;
+  return {
+    symbol,
+    bid: p.bid,
+    ask: p.ask,
+    digits: p.digits,
+    spread: parseFloat((p.ask - p.bid).toFixed(p.digits)),
+    contract_size: p.contract,
+    margin_required: (p.ask * p.contract * 0.01).toFixed(2),
+  };
+}
+
+module.exports = {
+  prices: SYMBOLS, // static per-symbol metadata (digits/point/contract/spread) — read-only lookups elsewhere
+  getPrice,
+  getAllPrices,
+  calculateProfit,
+  getMarketInfo,
+  ticketFromId,
+};

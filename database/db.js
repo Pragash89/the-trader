@@ -1,30 +1,131 @@
-const Datastore = require('nedb-promises');
-const path = require('path');
+// Postgres-backed data layer (Vercel Postgres). Each "collection" is a table with
+// a TEXT primary key (_id) and a JSONB `data` column, so the find/findOne/insert/update
+// calls used throughout routes/*.js work unchanged — only the storage backend moved
+// from NeDB (local file) to Postgres (serverless-safe, no local disk required).
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
 
-const dataPath = path.join(__dirname, '../data');
-if (!fs.existsSync(dataPath)) fs.mkdirSync(dataPath, { recursive: true });
+const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+if (!connectionString) {
+  console.warn('[DB] POSTGRES_URL not set — connect a Vercel Postgres store or set POSTGRES_URL in .env');
+}
+
+// max:1 — each serverless instance keeps a single connection; Vercel Postgres'
+// connection string already points at a pooler, so this avoids exhausting Postgres
+// connections under concurrent invocations.
+const pool = new Pool({
+  connectionString,
+  max: 1,
+  ssl: connectionString && !/localhost|127\.0\.0\.1/.test(connectionString) ? { rejectUnauthorized: false } : undefined,
+});
+
+const TABLES = ['users', 'accounts', 'trades', 'transactions', 'kyc', 'notifications', 'admins'];
+
+let migrated = null;
+function migrate() {
+  if (!migrated) {
+    migrated = (async () => {
+      for (const t of TABLES) {
+        await pool.query(`CREATE TABLE IF NOT EXISTS ${t} (_id TEXT PRIMARY KEY, data JSONB NOT NULL)`);
+      }
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users ((data->>'email'))`);
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS users_account_number_idx ON users ((data->>'account_number'))`);
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS accounts_account_number_idx ON accounts ((data->>'account_number'))`);
+      await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS admins_email_idx ON admins ((data->>'email'))`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS trades_status_idx ON trades ((data->>'status'))`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS trades_user_idx ON trades ((data->>'user_id'))`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS txns_user_idx ON transactions ((data->>'user_id'))`);
+    })();
+  }
+  return migrated;
+}
+
+// Field names are always literal keys from our own route code (never derived from
+// request bodies), so interpolating them into the SQL text is safe — only values
+// (pushed into `params`) come from user input, and those are always parameterized.
+function fieldCond(key, value, params) {
+  if (value === null || value === undefined) {
+    return `(data->'${key}' IS NULL OR data->'${key}' = 'null'::jsonb)`;
+  }
+  params.push(String(value));
+  return `data->>'${key}' = $${params.length}`;
+}
+
+function buildWhere(filter, params) {
+  const clauses = [];
+  for (const [key, value] of Object.entries(filter || {})) {
+    if (key === '$or') {
+      const orClauses = value.map(sub => '(' + buildWhere(sub, params) + ')');
+      clauses.push('(' + orClauses.join(' OR ') + ')');
+    } else {
+      clauses.push(fieldCond(key, value, params));
+    }
+  }
+  return clauses.length ? clauses.join(' AND ') : 'TRUE';
+}
+
+async function find(table, filter) {
+  await migrate();
+  const params = [];
+  const where = buildWhere(filter, params);
+  const { rows } = await pool.query(`SELECT data FROM ${table} WHERE ${where}`, params);
+  return rows.map(r => r.data);
+}
+
+async function findOne(table, filter) {
+  await migrate();
+  const params = [];
+  const where = buildWhere(filter, params);
+  const { rows } = await pool.query(`SELECT data FROM ${table} WHERE ${where} LIMIT 1`, params);
+  return rows[0] || null;
+}
+
+async function insert(table, doc) {
+  await migrate();
+  await pool.query(`INSERT INTO ${table} (_id, data) VALUES ($1, $2::jsonb)`, [doc._id, JSON.stringify(doc)]);
+  return doc;
+}
+
+async function update(table, filter, modifier, opts = {}) {
+  await migrate();
+  const patch = modifier.$set || {};
+  const params = [];
+  const where = buildWhere(filter, params);
+  params.push(JSON.stringify(patch));
+  const patchIdx = params.length;
+  if (opts.multi) {
+    const { rowCount } = await pool.query(`UPDATE ${table} SET data = data || $${patchIdx}::jsonb WHERE ${where}`, params);
+    return rowCount;
+  }
+  const { rowCount } = await pool.query(
+    `UPDATE ${table} SET data = data || $${patchIdx}::jsonb WHERE _id = (SELECT _id FROM ${table} WHERE ${where} LIMIT 1)`,
+    params
+  );
+  return rowCount;
+}
+
+function collection(table) {
+  return {
+    find: (filter) => find(table, filter),
+    findOne: (filter) => findOne(table, filter),
+    insert: (doc) => insert(table, doc),
+    update: (filter, modifier, opts) => update(table, filter, modifier, opts),
+    ensureIndex: () => migrate(),
+  };
+}
 
 const db = {
-  users: Datastore.create({ filename: path.join(dataPath, 'users.db'), autoload: true }),
-  accounts: Datastore.create({ filename: path.join(dataPath, 'accounts.db'), autoload: true }),
-  trades: Datastore.create({ filename: path.join(dataPath, 'trades.db'), autoload: true }),
-  transactions: Datastore.create({ filename: path.join(dataPath, 'transactions.db'), autoload: true }),
-  kyc: Datastore.create({ filename: path.join(dataPath, 'kyc.db'), autoload: true }),
-  notifications: Datastore.create({ filename: path.join(dataPath, 'notifications.db'), autoload: true }),
-  admins: Datastore.create({ filename: path.join(dataPath, 'admins.db'), autoload: true }),
+  users: collection('users'),
+  accounts: collection('accounts'),
+  trades: collection('trades'),
+  transactions: collection('transactions'),
+  kyc: collection('kyc'),
+  notifications: collection('notifications'),
+  admins: collection('admins'),
 };
 
-// Ensure unique indexes
-db.users.ensureIndex({ fieldName: 'email', unique: true });
-db.users.ensureIndex({ fieldName: 'account_number', unique: true });
-db.accounts.ensureIndex({ fieldName: 'account_number', unique: true });
-db.admins.ensureIndex({ fieldName: 'email', unique: true });
-
 async function seedData() {
-  // Seed admin
   const adminExists = await db.admins.findOne({ email: 'admin@thetrader.com' });
   if (!adminExists) {
     const hash = await bcrypt.hash('Admin@2024!', 12);
@@ -39,7 +140,6 @@ async function seedData() {
     console.log('Default admin: admin@thetrader.com / Admin@2024!');
   }
 
-  // Seed demo client
   const demoExists = await db.users.findOne({ email: 'demo@thetrader.com' });
   if (!demoExists) {
     const hash = await bcrypt.hash('Demo@1234!', 12);
@@ -111,6 +211,6 @@ async function seedData() {
   }
 }
 
-seedData().catch(console.error);
+seedData().catch(err => console.error('[DB] seed error:', err.message));
 
 module.exports = db;

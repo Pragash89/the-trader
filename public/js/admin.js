@@ -344,12 +344,12 @@ async function loadKyc() {
     <td><strong>${d.first_name} ${d.last_name}</strong><br><span style="font-size:11px;color:var(--text3)">${d.email}</span></td>
     <td><code style="font-size:11px">${d.account_number}</code></td>
     <td style="text-transform:capitalize">${d.type?.replace(/_/g,' ')}</td>
-    <td><a href="/uploads/${d.filename}" target="_blank" style="color:var(--blue);font-size:13px">📄 View Doc</a></td>
+    <td><a href="${d.url || '#'}" target="_blank" style="color:var(--blue);font-size:13px">📄 View Doc</a></td>
     <td style="font-size:12px;color:var(--text3)">${fmtDate(d.uploaded_at)}</td>
     <td><span class="status-badge ${d.status}">${d.status}</span></td>
     <td>
-      <button class="btn-approve" onclick="reviewKyc('${d.id}','approved')">✓ Approve</button>
-      <button class="btn-reject" onclick="reviewKyc('${d.id}','rejected')">✗ Reject</button>
+      <button class="btn-approve" onclick="reviewKyc('${d._id}','approved')">✓ Approve</button>
+      <button class="btn-reject" onclick="reviewKyc('${d._id}','rejected')">✗ Reject</button>
     </td>
   </tr>`).join('');
 }

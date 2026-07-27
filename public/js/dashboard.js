@@ -324,7 +324,7 @@ function renderPositions() {
   body.innerHTML = openTrades.map(t => {
     const profit = typeof t.profit === 'number' ? t.profit : 0;
     total += profit;
-    return `<tr>
+    return `<tr data-trade-id="${t._id}">
       <td>${t.ticket || '—'}</td>
       <td><strong>${t.symbol}</strong></td>
       <td><span class="type-badge ${t.type}">${t.type.toUpperCase()}</span></td>
@@ -335,7 +335,7 @@ function renderPositions() {
       <td>${t.take_profit || '—'}</td>
       <td class="${profit >= 0 ? 'pnl-pos' : 'pnl-neg'}">${fmt(profit)}</td>
       <td>${fmtDate(t.open_time)}</td>
-      <td><button class="btn-close-trade" onclick="closeTrade('${t.id}', '${t.symbol}')">Close</button></td>
+      <td><button class="btn-close-trade" onclick="closeTrade('${t._id}', '${t.symbol}')">Close</button></td>
     </tr>`;
   }).join('');
 
@@ -453,17 +453,20 @@ function selectSymbol(sym) {
   if (el) { el.value = sym; onSymbolChange(); showPage('trade'); }
 }
 
-// ===== WEBSOCKET =====
+// ===== LIVE PRICES (polling — serverless-friendly, no persistent connection) =====
+// Every poll also asks the server to re-check this user's SL/TP against current
+// prices (see GET /api/client/prices), so positions still close close to real-time
+// without a background process.
 function connectWS() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}/ws`);
-  ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    if (msg.type === 'prices') handlePrices(msg.data);
-    if (msg.type === 'trade_closed') handleTradeClosed(msg.data);
-  };
-  ws.onclose = () => setTimeout(connectWS, 3000);
-  ws.onerror = () => ws.close();
+  pollPrices();
+  setInterval(pollPrices, 1000);
+}
+
+async function pollPrices() {
+  try {
+    const res = await fetch(`${API}/prices`, { headers: authHeaders() });
+    if (res.ok) handlePrices(await res.json());
+  } catch (_) { /* transient network error — next poll retries */ }
 }
 
 function handlePrices(prices) {
@@ -526,7 +529,7 @@ function handlePrices(prices) {
 
   // Refresh position rows (P&L only)
   openTrades.forEach(t => {
-    const row = document.querySelector(`[data-trade-id="${t.id}"]`);
+    const row = document.querySelector(`[data-trade-id="${t._id}"]`);
     if (row) {
       const pnlCell = row.querySelector('.trade-pnl');
       if (pnlCell) { pnlCell.textContent = fmt(t.profit); pnlCell.className = 'trade-pnl ' + (t.profit >= 0 ? 'pnl-pos' : 'pnl-neg'); }
@@ -534,11 +537,6 @@ function handlePrices(prices) {
   });
 
   updateEquityChart();
-}
-
-function handleTradeClosed(data) {
-  openTrades = openTrades.filter(t => t.id !== data.trade_id);
-  loadDashboard(); // Reload to get updated balance
 }
 
 function calcPnl(symbol, type, volume, openPrice, currentPrice) {
@@ -554,14 +552,21 @@ function calcPnl(symbol, type, volume, openPrice, currentPrice) {
 }
 
 // ===== REFRESH POSITIONS =====
+// The server closes SL/TP-triggered trades inline (see engine/sltp.js) whenever
+// prices are checked — so a trade can vanish from the open list between polls.
+// When that happens, reload the full dashboard to pick up the new balance/history.
 async function refreshOpenTrades() {
   try {
     const res = await fetch(`${API}/trades/open`, { headers: authHeaders() });
     if (res.ok) {
       const data = await res.json();
+      const prevIds = new Set(openTrades.map(t => t._id));
+      const newIds = new Set(data.map(t => t._id));
+      const someClosed = [...prevIds].some(id => !newIds.has(id));
       openTrades = data;
       renderPositions();
       renderMiniTrades();
+      if (someClosed) loadDashboard();
     }
   } catch (_) {}
 }
@@ -579,6 +584,41 @@ function onSymbolChange() {
     setVal('buyBtnPrice', p.ask.toFixed(d));
   }
   calcMargin();
+  loadTradeChart(sym);
+}
+
+// ===== TRADE NOW CHART (TradingView embedded widget) =====
+// Same free widget used on the WebTrader page — real market data/indicators for
+// visual analysis; order execution keeps using this platform's own bid/ask above.
+const TN_TV_SYMBOLS = {
+  EURUSD: 'OANDA:EURUSD', GBPUSD: 'OANDA:GBPUSD', USDJPY: 'OANDA:USDJPY', AUDUSD: 'OANDA:AUDUSD',
+  USDCHF: 'OANDA:USDCHF', USDCAD: 'OANDA:USDCAD', NZDUSD: 'OANDA:NZDUSD', EURJPY: 'OANDA:EURJPY',
+  GBPJPY: 'OANDA:GBPJPY', EURGBP: 'OANDA:EURGBP', XAUUSD: 'OANDA:XAUUSD', XAGUSD: 'OANDA:XAGUSD',
+  BTCUSD: 'COINBASE:BTCUSD', ETHUSD: 'COINBASE:ETHUSD', USOUSD: 'TVC:USOIL',
+  US30: 'FOREXCOM:US30', US500: 'FOREXCOM:SPXUSD', NAS100: 'FOREXCOM:NSXUSD', GER40: 'FOREXCOM:DE40',
+};
+
+function loadTradeChart(sym) {
+  const container = document.getElementById('tnChartWidget');
+  if (!container || typeof TradingView === 'undefined' || !sym) return;
+  setVal('tnChartSymLabel', sym.replace(/(.{3})(.{3})/, '$1/$2'));
+  container.innerHTML = '';
+  new TradingView.widget({
+    autosize: true,
+    symbol: TN_TV_SYMBOLS[sym] || 'OANDA:EURUSD',
+    interval: '15',
+    timezone: 'Etc/UTC',
+    theme: 'dark',
+    style: '1',
+    locale: 'en',
+    toolbar_bg: '#171d2b',
+    enable_publishing: false,
+    allow_symbol_change: false,
+    hide_side_toolbar: false,
+    withdateranges: true,
+    details: false,
+    container_id: 'tnChartWidget',
+  });
 }
 
 function calcMargin() {
@@ -715,9 +755,8 @@ function formatCardNum(el) {
   if (icon) { if (v[0]==='4') icon.textContent='💳'; else if (v[0]==='5') icon.textContent='💳'; else if (v.startsWith('37')||v.startsWith('34')) icon.textContent='💳'; else icon.textContent='💳'; }
 }
 function checkCard() {
-  const val = document.getElementById('cardNumber')?.value.replace(/\s/g,'') || '';
-  const errEl = document.getElementById('cardError');
-  if (errEl && val.length >= 4) { errEl.style.display = 'block'; }
+  // Real authorization only happens when the client clicks Deposit (see
+  // submitCardDeposit) — no need to pre-flag anything as the card number is typed.
 }
 function formatExpiry(el) {
   let v = el.value.replace(/\D/g,'');
@@ -775,7 +814,10 @@ async function submitDeposit() {
   const method = selectedDepLabel || 'Bank Transfer';
   const msgEl = document.getElementById('depositMsg');
   if (msgEl) msgEl.style.display = 'none';
+  document.getElementById('cardDeclineActions').style.display = 'none';
   if (!amount || amount < 100) { showMsg('depositMsg', 'error', 'Minimum deposit is $100'); return; }
+
+  if (selectedDepMethod === 'card') { await submitCardDeposit(); return; }
 
   const btn = document.getElementById('depositBtn');
   btn.disabled = true; btn.textContent = 'Processing...';
@@ -793,6 +835,52 @@ async function submitDeposit() {
   } finally {
     btn.disabled = false; btn.textContent = 'Deposit';
   }
+}
+
+// Card payments are routed through a (simulated) card-issuer authorization step —
+// this brokerage doesn't hold a card-acquiring license, so every card attempt is
+// declined after a realistic processing delay, steering traders to Crypto/Bank
+// Transfer instead. No transaction record is created since the card is never charged.
+async function submitCardDeposit() {
+  const name = document.getElementById('cardName')?.value.trim();
+  const number = document.getElementById('cardNumber')?.value.replace(/\s/g, '');
+  const expiry = document.getElementById('cardExpiry')?.value.trim();
+  const cvv = document.getElementById('cardCVV')?.value.trim();
+
+  if (!name || number.length < 15 || !/^\d{2} \/ \d{2}$/.test(expiry) || cvv.length < 3) {
+    showMsg('depositMsg', 'error', 'Please fill in all card details correctly before continuing.');
+    return;
+  }
+
+  const btn = document.getElementById('depositBtn');
+  const cardInputs = ['cardName', 'cardNumber', 'cardExpiry', 'cardCVV'].map(id => document.getElementById(id));
+  const msgEl = document.getElementById('depositMsg');
+  const errEl = document.getElementById('cardError');
+
+  btn.disabled = true; btn.textContent = 'Authorizing…';
+  cardInputs.forEach(el => el && (el.disabled = true));
+  if (errEl) errEl.style.display = 'none';
+
+  let dots = 0;
+  msgEl.className = 'trade-message info';
+  msgEl.style.display = 'block';
+  msgEl.textContent = 'Contacting your card issuer for authorization';
+  const anim = setInterval(() => {
+    dots = (dots + 1) % 4;
+    msgEl.textContent = 'Contacting your card issuer for authorization' + '.'.repeat(dots);
+  }, 450);
+
+  const delay = 4000 + Math.random() * 3000; // 4–7 seconds, feels like a real gateway round-trip
+  await new Promise(r => setTimeout(r, delay));
+  clearInterval(anim);
+
+  const declineText = 'We were unable to process this transaction with your card. Please try a different card, or use Crypto for instant, hassle-free deposits.';
+  showMsg('depositMsg', 'error', '❌ ' + declineText);
+  if (errEl) { errEl.textContent = 'Card declined by issuing bank'; errEl.style.display = 'block'; }
+  document.getElementById('cardDeclineActions').style.display = 'block';
+
+  btn.disabled = false; btn.textContent = 'Deposit';
+  cardInputs.forEach(el => el && (el.disabled = false));
 }
 
 async function submitWithdraw() {
@@ -820,12 +908,14 @@ async function submitWithdraw() {
 
 // ===== KYC =====
 async function uploadKYC() {
-  const file = document.getElementById('kycFile')?.files[0];
+  const files = Array.from(document.getElementById('kycFile')?.files || []);
   const type = document.getElementById('kycDocType')?.value;
-  if (!file) return;
+  if (!files.length) return;
+
+  renderKycFileList(files, 'uploading');
 
   const formData = new FormData();
-  formData.append('document', file);
+  files.forEach(f => formData.append('documents', f));
   formData.append('type', type);
 
   try {
@@ -838,10 +928,25 @@ async function uploadKYC() {
     if (!res.ok) throw new Error(data.error);
     showMsg('kycMsg', 'success', '✅ ' + data.message);
     document.getElementById('kycFile').value = '';
+    document.getElementById('kycFileList').innerHTML = '';
     await loadDashboard();
   } catch (err) {
     showMsg('kycMsg', 'error', '❌ ' + err.message);
+    renderKycFileList(files, 'error');
   }
+}
+
+function renderKycFileList(files, state) {
+  const el = document.getElementById('kycFileList');
+  if (!el) return;
+  const label = state === 'uploading' ? 'Uploading…' : state === 'error' ? 'Failed' : '';
+  el.innerHTML = files.map(f => `
+    <div class="kyc-file-item">
+      <span>📄 ${f.name}</span>
+      <span class="kyc-file-size">${(f.size / 1024).toFixed(0)} KB</span>
+      ${label ? `<span class="kyc-file-status ${state}">${label}</span>` : ''}
+    </div>
+  `).join('');
 }
 
 // Upload zone drag & drop
@@ -851,8 +956,7 @@ if (uploadZone) {
   uploadZone.addEventListener('dragleave', () => { uploadZone.style.borderColor = ''; });
   uploadZone.addEventListener('drop', e => {
     e.preventDefault(); uploadZone.style.borderColor = '';
-    const file = e.dataTransfer.files[0];
-    if (file) { document.getElementById('kycFile').files = e.dataTransfer.files; uploadKYC(); }
+    if (e.dataTransfer.files.length) { document.getElementById('kycFile').files = e.dataTransfer.files; uploadKYC(); }
   });
 }
 
@@ -885,6 +989,7 @@ function showPage(page) {
   if (navEl) navEl.classList.add('active');
   closeSidebar();
   if (page === 'mt5') showMT5Page();
+  if (page === 'trade') loadTradeChart(document.getElementById('tradeSymbol')?.value);
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(btn => {
@@ -897,6 +1002,31 @@ document.getElementById('sidebarToggle')?.addEventListener('click', () => {
   document.getElementById('overlay').style.display = 'block';
 });
 document.getElementById('sidebarClose')?.addEventListener('click', closeSidebar);
+
+// Sidebar collapse (desktop icon rail) — defaults to collapsed, remembers user's choice
+const SIDEBAR_COLLAPSE_KEY = 'tt_sidebar_collapsed';
+
+function applySidebarCollapsed(collapsed) {
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  const btn = document.getElementById('sidebarCollapseBtn');
+  if (btn) btn.title = collapsed ? 'Expand menu' : 'Collapse menu';
+  document.querySelectorAll('.nav-item[title]').forEach(el => { if (!collapsed) el.removeAttribute('title'); });
+  if (collapsed) {
+    document.querySelectorAll('.nav-item').forEach(el => {
+      const label = el.querySelector('.nav-label');
+      if (label) el.title = label.textContent.replace(/NEW$/, '').trim();
+    });
+  }
+}
+
+const storedCollapsed = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+applySidebarCollapsed(storedCollapsed === null ? true : storedCollapsed === '1');
+
+document.getElementById('sidebarCollapseBtn')?.addEventListener('click', () => {
+  const collapsed = !document.body.classList.contains('sidebar-collapsed');
+  applySidebarCollapsed(collapsed);
+  localStorage.setItem(SIDEBAR_COLLAPSE_KEY, collapsed ? '1' : '0');
+});
 document.getElementById('overlay')?.addEventListener('click', closeSidebar);
 function closeSidebar() {
   document.getElementById('sidebar')?.classList.remove('open');

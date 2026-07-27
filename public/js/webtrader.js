@@ -1,4 +1,4 @@
-/* ===== WEBTRADER.JS — TradingView Lightweight Charts ===== */
+/* ===== WEBTRADER.JS — TradingView embedded chart ===== */
 'use strict';
 
 const token = localStorage.getItem('tt_token');
@@ -6,21 +6,10 @@ if (!token) { window.location.href = '/login'; }
 
 // ── State ──────────────────────────────────────────────────────────────────
 let currentSymbol = 'EURUSD';
-let currentTF = '1m';
-let currentChartType = 'candlestick';
 let prices = {};
 let account = { balance: 0, equity: 0, margin: 0 };
 let openTrades = [];
 let closedTrades = [];
-let ws = null;
-let wsReconnectTimer = null;
-let showMA = false, showBB = false, showVolume = false;
-
-// ── Chart objects ──────────────────────────────────────────────────────────
-let mainChart = null, mainSeries = null, maSeries = null, bbUpperSeries = null, bbLowerSeries = null;
-let volumeChart = null, volumeSeries = null;
-let ohlcData = {};   // symbol -> tf -> bars[]
-let priceHistory = {}; // symbol -> last 200 ticks for on-the-fly aggregation
 
 // ── Symbol meta ───────────────────────────────────────────────────────────
 const SYMBOLS = [
@@ -49,16 +38,12 @@ const fmtUSD = v => (v >= 0 ? '+' : '') + '$' + Math.abs(v).toFixed(2);
 // ── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   buildSymbolList();
-  initChart();
   connectWS();
   loadDashboard();
   loadHistory();
   initPanelTabs();
   initBottomTabs();
-  initTimeframes();
-  initChartTypes();
   selectSymbol('EURUSD');
-  generateHistoricalData();
 });
 
 // ── Symbol list ────────────────────────────────────────────────────────────
@@ -100,31 +85,33 @@ function selectSymbol(sym) {
   calcMargin();
 }
 
-// ── WebSocket ──────────────────────────────────────────────────────────────
+// ── Live prices (polling — serverless-friendly, no persistent connection) ──────
+// GET /api/client/prices also re-checks this user's SL/TP on the server on every
+// call, so a position can disappear between polls — loadDashboard() (polled every
+// 5s below) picks up the resulting balance/history change.
+let knownOpenTradeIds = new Set();
+
 function connectWS() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}/ws?token=${token}`);
+  pollPrices();
+  setInterval(pollPrices, 1000);
+  setInterval(watchForClosedTrades, 5000);
+}
 
-  ws.onopen = () => { clearTimeout(wsReconnectTimer); };
+async function pollPrices() {
+  try {
+    const data = await apiFetch('/api/client/prices');
+    handlePrices(data);
+  } catch (e) {}
+}
 
-  ws.onmessage = ({ data }) => {
-    try {
-      const msg = JSON.parse(data);
-      if (msg.type === 'prices') {
-        handlePrices(msg.data);
-      } else if (msg.type === 'trade_closed') {
-        showToast(`Trade #${msg.ticket} closed. P&L: ${fmtUSD(msg.profit)}`, msg.profit >= 0 ? 'success' : 'error');
-        loadDashboard();
-        loadHistory();
-      } else if (msg.type === 'notification') {
-        showToast(msg.message, 'success');
-      }
-    } catch (e) {}
-  };
-
-  ws.onclose = () => {
-    wsReconnectTimer = setTimeout(connectWS, 3000);
-  };
+async function watchForClosedTrades() {
+  const prevIds = knownOpenTradeIds;
+  await loadDashboard();
+  knownOpenTradeIds = new Set(openTrades.map(t => t._id));
+  if (prevIds.size && [...prevIds].some(id => !knownOpenTradeIds.has(id))) {
+    showToast('A position closed (SL/TP hit) — check your history for details.', 'success');
+    loadHistory();
+  }
 }
 
 function handlePrices(data) {
@@ -159,8 +146,6 @@ function handlePrices(data) {
     chgEl.textContent = (chgPct >= 0 ? '+' : '') + chgPct + '%';
     chgEl.className = 'wt-sym-chg ' + (mid >= prev ? 'up' : 'dn');
 
-    // push tick into chart
-    pushTick(currentSymbol, mid);
     // update order panel prices
     updateOrderPrices();
   }
@@ -169,252 +154,41 @@ function handlePrices(data) {
   updatePositionsPnl();
 }
 
-// ── Chart ──────────────────────────────────────────────────────────────────
-function initChart() {
-  const container = document.getElementById('chartContainer');
-  mainChart = LightweightCharts.createChart(container, {
-    layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
-    grid: { vertLines: { color: '#161b22' }, horzLines: { color: '#161b22' } },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor: '#30363d', textColor: '#8b949e', fontSize: 11 },
-    timeScale: { borderColor: '#30363d', timeVisible: true, secondsVisible: false, fontSize: 11 },
-    handleScroll: true,
-    handleScale: true,
-  });
+// ── Chart (TradingView embedded widget — free, brings its own full indicator &
+// drawing toolset so traders can use everything they're already familiar with) ──
+// Note: this widget renders TradingView's own real market data for visual/technical
+// analysis. Order execution (bid/ask, P&L, SL/TP) always uses this platform's own
+// price feed via pollPrices()/handlePrices() below — the two are intentionally
+// decoupled, same as how a broker's terminal and its charting package differ.
+const TV_SYMBOLS = {
+  EURUSD: 'OANDA:EURUSD', GBPUSD: 'OANDA:GBPUSD', USDJPY: 'OANDA:USDJPY', AUDUSD: 'OANDA:AUDUSD',
+  USDCHF: 'OANDA:USDCHF', USDCAD: 'OANDA:USDCAD', NZDUSD: 'OANDA:NZDUSD', EURJPY: 'OANDA:EURJPY',
+  GBPJPY: 'OANDA:GBPJPY', EURGBP: 'OANDA:EURGBP', XAUUSD: 'OANDA:XAUUSD', XAGUSD: 'OANDA:XAGUSD',
+  BTCUSD: 'COINBASE:BTCUSD', ETHUSD: 'COINBASE:ETHUSD', USOUSD: 'TVC:USOIL',
+  US30: 'FOREXCOM:US30', US500: 'FOREXCOM:SPXUSD', NAS100: 'FOREXCOM:NSXUSD', GER40: 'FOREXCOM:DE40',
+};
 
-  mainSeries = mainChart.addCandlestickSeries({
-    upColor: '#3fb950', downColor: '#f85149',
-    borderUpColor: '#3fb950', borderDownColor: '#f85149',
-    wickUpColor: '#3fb950', wickDownColor: '#f85149',
-  });
-
-  // crosshair data display
-  mainChart.subscribeCrosshairMove(param => {
-    if (!param.time || !mainSeries) return;
-    const data = param.seriesData.get(mainSeries);
-    if (data) {
-      document.getElementById('ohlcDisplay').textContent =
-        `O:${fmt(currentSymbol,data.open)} H:${fmt(currentSymbol,data.high)} L:${fmt(currentSymbol,data.low)} C:${fmt(currentSymbol,data.close)}`;
-    }
-  });
-
-  // resize observer
-  new ResizeObserver(() => {
-    mainChart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
-  }).observe(container);
-
-  // Volume chart (hidden by default)
-  const vc = document.getElementById('volumeContainer');
-  volumeChart = LightweightCharts.createChart(vc, {
-    layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
-    grid: { vertLines: { color: '#161b22' }, horzLines: { color: '#161b22' } },
-    rightPriceScale: { borderColor: '#30363d', textColor: '#8b949e', fontSize: 10, scaleMargins: { top: 0.1, bottom: 0 } },
-    timeScale: { visible: false },
-  });
-  volumeSeries = volumeChart.addHistogramSeries({ color: '#2f81f740', priceFormat: { type: 'volume' } });
-  new ResizeObserver(() => {
-    volumeChart.applyOptions({ width: vc.clientWidth, height: vc.clientHeight });
-  }).observe(vc);
-}
-
-function getBarTime(timestamp, tfMs) {
-  return Math.floor(timestamp / tfMs) * tfMs / 1000;
-}
-
-const TF_MS = { '1m': 60000, '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000 };
-
-// Generate bars lazily — only for the symbol+TF currently needed
-function generateHistoricalData() {
-  loadChartForSymbol(currentSymbol);
-}
-
-function ensureBars(sym, tf) {
-  if (!ohlcData[sym]) ohlcData[sym] = {};
-  if (!ohlcData[sym][tf]) ohlcData[sym][tf] = generateBars(sym, tf);
-}
-
-function generateBars(sym, tf) {
-  const basePrice = getBasePrice(sym);
-  const volatility = getVolatility(sym);
-  const tfMs = TF_MS[tf];
-  const numBars = 300;
-  const now = Date.now();
-  const bars = [];
-  let price = basePrice;
-
-  for (let i = numBars; i >= 0; i--) {
-    const barTime = Math.floor((now - i * tfMs) / tfMs) * tfMs / 1000;
-    const o = price;
-    const moves = Math.floor(tfMs / 800) + 1;
-    let hi = o, lo = o, cl = o;
-    for (let m = 0; m < moves; m++) {
-      const u1 = Math.random(), u2 = Math.random();
-      const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-      cl = cl * (1 + z * volatility);
-      hi = Math.max(hi, cl);
-      lo = Math.min(lo, cl);
-    }
-    price = cl;
-    bars.push({ time: barTime, open: +o.toFixed(DP[sym]??5), high: +hi.toFixed(DP[sym]??5), low: +lo.toFixed(DP[sym]??5), close: +cl.toFixed(DP[sym]??5), volume: Math.floor(Math.random() * 1000 + 100) });
-  }
-  return bars;
-}
-
-function getBasePrice(sym) {
-  const bases = { EURUSD:1.08, GBPUSD:1.27, USDJPY:150.2, AUDUSD:0.655, USDCHF:0.895, NZDUSD:0.605, USDCAD:1.365, EURJPY:162.3, GBPJPY:190.5, EURGBP:0.852, XAUUSD:2320, XAGUSD:27.5, BTCUSD:67000, ETHUSD:3500, USOUSD:82.5, US30:38500, US500:5200, NAS100:18200, GER40:18000 };
-  return bases[sym] || 1.0;
-}
-
-function getVolatility(sym) {
-  const v = { BTCUSD:0.002, ETHUSD:0.003, US30:0.001, US500:0.001, NAS100:0.0015, GER40:0.001, XAUUSD:0.0008, XAGUSD:0.001, USOUSD:0.001 };
-  return v[sym] || 0.0003;
-}
-
+// The free TradingView embed has no live "change symbol" API, so switching
+// symbols re-creates the widget — cheap enough for how often a trader switches.
 function loadChartForSymbol(sym) {
-  ensureBars(sym, currentTF);
-  const bars = ohlcData[sym][currentTF];
-  if (mainSeries && bars.length) {
-    if (currentChartType === 'candlestick') {
-      mainSeries.setData(bars);
-    } else if (currentChartType === 'line') {
-      mainSeries.setData(bars.map(b => ({ time: b.time, value: b.close })));
-    } else {
-      mainSeries.setData(bars.map(b => ({ time: b.time, value: b.close })));
-    }
-    if (volumeSeries) {
-      volumeSeries.setData(bars.map(b => ({ time: b.time, value: b.volume, color: b.close >= b.open ? '#3fb95040' : '#f8514940' })));
-    }
-    mainChart.timeScale().fitContent();
-    // update indicators
-    if (showMA) renderMA(bars);
-    if (showBB) renderBB(bars);
-  }
-}
-
-function pushTick(sym, price) {
-  ensureBars(sym, currentTF);
-  const tfMs = TF_MS[currentTF];
-  const bars = ohlcData[sym][currentTF];
-  if (!bars || !bars.length) return;
-  const nowSec = Math.floor(Date.now() / tfMs) * tfMs / 1000;
-  const last = bars[bars.length - 1];
-  const p = +price.toFixed(DP[sym] ?? 5);
-
-  if (last.time === nowSec) {
-    last.high = Math.max(last.high, p);
-    last.low = Math.min(last.low, p);
-    last.close = p;
-    last.volume = (last.volume || 0) + 1;
-  } else {
-    const newBar = { time: nowSec, open: last.close, high: Math.max(last.close, p), low: Math.min(last.close, p), close: p, volume: 1 };
-    bars.push(newBar);
-    if (bars.length > 500) bars.shift();
-  }
-
-  if (sym !== currentSymbol) return;
-  if (currentChartType === 'candlestick') {
-    mainSeries.update({ time: bars[bars.length-1].time, open: bars[bars.length-1].open, high: bars[bars.length-1].high, low: bars[bars.length-1].low, close: bars[bars.length-1].close });
-  } else {
-    mainSeries.update({ time: bars[bars.length-1].time, value: bars[bars.length-1].close });
-  }
-  if (volumeSeries) {
-    const lb = bars[bars.length-1];
-    volumeSeries.update({ time: lb.time, value: lb.volume, color: lb.close >= lb.open ? '#3fb95040' : '#f8514940' });
-  }
-}
-
-// ── Indicators ─────────────────────────────────────────────────────────────
-function toggleMA() {
-  showMA = !showMA;
-  document.getElementById('maBtn').classList.toggle('active', showMA);
-  if (!showMA && maSeries) { mainChart.removeSeries(maSeries); maSeries = null; }
-  else { renderMA(ohlcData[currentSymbol]?.[currentTF] || []); }
-}
-
-function renderMA(bars) {
-  if (maSeries) { mainChart.removeSeries(maSeries); maSeries = null; }
-  if (!bars.length) return;
-  maSeries = mainChart.addLineSeries({ color: '#d29922', lineWidth: 1, priceLineVisible: false });
-  const period = 20;
-  const data = bars.slice(period - 1).map((b, i) => {
-    const slice = bars.slice(i, i + period);
-    const avg = slice.reduce((a, c) => a + c.close, 0) / period;
-    return { time: b.time, value: +avg.toFixed(DP[currentSymbol] ?? 5) };
-  });
-  maSeries.setData(data);
-}
-
-function toggleBB() {
-  showBB = !showBB;
-  document.getElementById('bbBtn').classList.toggle('active', showBB);
-  if (!showBB) {
-    if (bbUpperSeries) { mainChart.removeSeries(bbUpperSeries); bbUpperSeries = null; }
-    if (bbLowerSeries) { mainChart.removeSeries(bbLowerSeries); bbLowerSeries = null; }
-  } else { renderBB(ohlcData[currentSymbol]?.[currentTF] || []); }
-}
-
-function renderBB(bars) {
-  if (bbUpperSeries) mainChart.removeSeries(bbUpperSeries);
-  if (bbLowerSeries) mainChart.removeSeries(bbLowerSeries);
-  if (!bars.length) return;
-  const period = 20, k = 2;
-  const upper = [], lower = [];
-  for (let i = period - 1; i < bars.length; i++) {
-    const slice = bars.slice(i - period + 1, i + 1);
-    const avg = slice.reduce((a,c) => a + c.close, 0) / period;
-    const std = Math.sqrt(slice.reduce((a,c) => a + Math.pow(c.close - avg, 2), 0) / period);
-    upper.push({ time: bars[i].time, value: +(avg + k * std).toFixed(DP[currentSymbol]??5) });
-    lower.push({ time: bars[i].time, value: +(avg - k * std).toFixed(DP[currentSymbol]??5) });
-  }
-  bbUpperSeries = mainChart.addLineSeries({ color: '#2f81f780', lineWidth: 1, priceLineVisible: false, lineStyle: 1 });
-  bbLowerSeries = mainChart.addLineSeries({ color: '#2f81f780', lineWidth: 1, priceLineVisible: false, lineStyle: 1 });
-  bbUpperSeries.setData(upper);
-  bbLowerSeries.setData(lower);
-}
-
-function toggleVolume() {
-  showVolume = !showVolume;
-  document.getElementById('volumeBtn').classList.toggle('active', showVolume);
-  const vc = document.getElementById('volumeContainer');
-  vc.classList.toggle('visible', showVolume);
-  setTimeout(() => {
-    volumeChart.applyOptions({ width: vc.clientWidth, height: vc.clientHeight });
-  }, 50);
-}
-
-// ── Timeframe / chart type ─────────────────────────────────────────────────
-function initTimeframes() {
-  document.querySelectorAll('.wt-tf').forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll('.wt-tf').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentTF = btn.dataset.tf;
-      loadChartForSymbol(currentSymbol);
-    };
-  });
-}
-
-function initChartTypes() {
-  document.querySelectorAll('.wt-ct').forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll('.wt-ct').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const ct = btn.dataset.ct;
-      if (ct === currentChartType) return;
-      currentChartType = ct;
-      if (mainSeries) mainChart.removeSeries(mainSeries);
-      if (maSeries) { mainChart.removeSeries(maSeries); maSeries = null; }
-      if (bbUpperSeries) { mainChart.removeSeries(bbUpperSeries); bbUpperSeries = null; }
-      if (bbLowerSeries) { mainChart.removeSeries(bbLowerSeries); bbLowerSeries = null; }
-      if (ct === 'candlestick') {
-        mainSeries = mainChart.addCandlestickSeries({ upColor:'#3fb950',downColor:'#f85149',borderUpColor:'#3fb950',borderDownColor:'#f85149',wickUpColor:'#3fb950',wickDownColor:'#f85149' });
-      } else if (ct === 'line') {
-        mainSeries = mainChart.addLineSeries({ color:'#2f81f7', lineWidth:2, priceLineVisible:true });
-      } else {
-        mainSeries = mainChart.addAreaSeries({ topColor:'rgba(47,129,247,0.3)', bottomColor:'rgba(47,129,247,0.0)', lineColor:'#2f81f7', lineWidth:2 });
-      }
-      loadChartForSymbol(currentSymbol);
-    };
+  const container = document.getElementById('tvChartWidget');
+  if (!container || typeof TradingView === 'undefined') return;
+  container.innerHTML = '';
+  new TradingView.widget({
+    autosize: true,
+    symbol: TV_SYMBOLS[sym] || 'OANDA:EURUSD',
+    interval: '15',
+    timezone: 'Etc/UTC',
+    theme: 'dark',
+    style: '1',
+    locale: 'en',
+    toolbar_bg: '#161b22',
+    enable_publishing: false,
+    allow_symbol_change: false,
+    hide_side_toolbar: false,
+    withdateranges: true,
+    details: false,
+    container_id: 'tvChartWidget',
   });
 }
 

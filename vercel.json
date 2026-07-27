@@ -4,8 +4,9 @@
     { "src": "server.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/server.js" },
-    { "src": "/ws", "dest": "/server.js" },
     { "src": "/(.*)", "dest": "/server.js" }
+  ],
+  "crons": [
+    { "path": "/api/cron/sltp", "schedule": "*/5 * * * *" }
   ]
 }

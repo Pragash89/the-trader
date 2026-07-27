@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://s3.tradingview.com/tv.js"></script>
   <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
@@ -18,12 +19,15 @@
       <div class="logo-icon">T</div>
       <span>The<strong>Trader</strong></span>
     </a>
+    <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
     <button class="sidebar-close" id="sidebarClose">✕</button>
   </div>
 
   <div class="account-mini" id="accountMini">
     <div class="acc-avatar" id="accAvatar">–</div>
-    <div>
+    <div class="acc-info">
       <div class="acc-name" id="accName">Loading...</div>
       <div class="acc-num" id="accNum">–</div>
     </div>
@@ -33,55 +37,55 @@
   <nav class="sidebar-nav">
     <button class="nav-item active" data-page="overview">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Overview
+      <span class="nav-label">Overview</span>
     </button>
     <button class="nav-item" data-page="trade">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 12l-6-6-4 4-3-3"/></svg>
-      Trade Now
+      <span class="nav-label">Trade Now</span>
       <span class="nav-badge" id="openCount">0</span>
     </button>
     <button class="nav-item" data-page="positions">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Positions
+      <span class="nav-label">Positions</span>
     </button>
     <button class="nav-item" data-page="history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      History
+      <span class="nav-label">History</span>
     </button>
     <button class="nav-item" data-page="deposit">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Deposit
+      <span class="nav-label">Deposit</span>
     </button>
     <button class="nav-item" data-page="withdraw">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      Withdraw
+      <span class="nav-label">Withdraw</span>
     </button>
     <button class="nav-item" data-page="transactions">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-      Transactions
+      <span class="nav-label">Transactions</span>
     </button>
     <button class="nav-item" data-page="kyc">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      KYC Verification
+      <span class="nav-label">KYC Verification</span>
     </button>
     <button class="nav-item" data-page="mt5">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8l3 3 2-2 3 4"/></svg>
-      Trading Accounts
+      <span class="nav-label">Trading Accounts</span>
     </button>
-    <a href="/webtrader" class="nav-item" style="text-decoration:none;display:flex;align-items:center;gap:10px;">
+    <a href="/webtrader" class="nav-item">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-      WebTrader<span style="font-size:9px;background:#2563eb;color:white;padding:1px 5px;border-radius:8px;">NEW</span>
+      <span class="nav-label">WebTrader<span class="nav-new-badge">NEW</span></span>
     </a>
     <button class="nav-item" data-page="settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
+      <span class="nav-label">Settings</span>
     </button>
   </nav>
 
   <div class="sidebar-footer">
     <button class="nav-item logout-btn" id="logoutBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Logout
+      <span class="nav-label">Logout</span>
     </button>
   </div>
 </div>
@@ -178,11 +182,30 @@
     <!-- Trade Now -->
     <div id="page-trade" class="page">
       <div class="page-header">
-        <div><h2>Trade Now</h2><p class="page-sub">Open new positions in real-time markets</p></div>
+        <div><h2>Trade Now</h2><p class="page-sub">One-click trading with a live chart — just like the WebTrader terminal</p></div>
+        <a href="/webtrader" class="btn-blue" style="text-decoration:none;">Open Full WebTrader →</a>
       </div>
-      <div class="trade-layout">
-        <div class="trade-form-card">
-          <h3>New Order</h3>
+
+      <div class="tn-terminal">
+        <!-- Left: market watch -->
+        <div class="tn-watch">
+          <div class="tn-watch-header">Market Watch</div>
+          <div id="marketWatch" class="tn-watch-list"></div>
+        </div>
+
+        <!-- Center: live chart -->
+        <div class="tn-chart-col">
+          <div class="tn-chart-toolbar">
+            <span class="tn-chart-badge" id="tnChartSymLabel">EUR/USD</span>
+            <span class="tn-chart-badge-sub">📊 TradingView — full indicators &amp; drawing tools</span>
+          </div>
+          <div class="tn-chart-container">
+            <div id="tnChartWidget" style="height:100%;width:100%"></div>
+          </div>
+        </div>
+
+        <!-- Right: one-click order ticket -->
+        <div class="tn-ticket">
           <div class="form-group">
             <label>Symbol</label>
             <select id="tradeSymbol" onchange="onSymbolChange()">
@@ -242,14 +265,8 @@
               BUY<br><span id="buyBtnPrice">—</span>
             </button>
           </div>
+          <p class="tn-oneclick-note">⚡ One click sends the order instantly at the price shown — no confirmation step.</p>
           <div id="tradeMsg" class="trade-message" style="display:none"></div>
-        </div>
-
-        <div class="trade-right">
-          <div class="market-watch-card">
-            <h3>Market Watch</h3>
-            <div id="marketWatch"></div>
-          </div>
         </div>
       </div>
     </div>
@@ -429,7 +446,7 @@
                     <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCardNum(this)" onblur="checkCard()">
                     <span class="card-type-icon" id="cardTypeIcon">💳</span>
                   </div>
-                  <div id="cardError" class="dep-card-error" style="display:none;">Your Card is not accepted for payments</div>
+                  <div id="cardError" class="dep-card-error" style="display:none;"></div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                   <div class="form-group">
@@ -503,6 +520,9 @@
             </div>
 
             <div id="depositMsg" class="trade-message" style="display:none;margin-top:14px;"></div>
+            <div id="cardDeclineActions" style="display:none;margin-top:10px;">
+              <button type="button" class="btn-switch-crypto" onclick="onMethodSelect('crypto','Cryptocurrency')">₿ Switch to Crypto Deposit →</button>
+            </div>
             <button class="btn-blue" onclick="submitDeposit()" id="depositBtn" style="width:100%;padding:14px;font-size:15px;margin-top:16px;">Deposit</button>
             <p style="text-align:center;font-size:12px;color:#94a3b8;margin-top:10px;">🔒 All deposits are encrypted and secured by SSL</p>
           </div>
@@ -641,10 +661,11 @@
           </div>
           <div class="upload-zone" id="uploadZone">
             <div class="upload-icon">📁</div>
-            <p>Drag & drop your file here, or <label for="kycFile" class="upload-link">browse</label></p>
-            <p class="upload-hint">Supported: JPG, PNG, PDF (max 5MB)</p>
-            <input type="file" id="kycFile" accept=".jpg,.jpeg,.png,.pdf" style="display:none" onchange="uploadKYC()">
+            <p>Drag & drop your files here, or <label for="kycFile" class="upload-link">browse</label></p>
+            <p class="upload-hint">Supported: JPG, PNG, PDF (max 5MB each) — select multiple files at once</p>
+            <input type="file" id="kycFile" accept=".jpg,.jpeg,.png,.pdf" multiple style="display:none" onchange="uploadKYC()">
           </div>
+          <div id="kycFileList" class="kyc-file-list"></div>
           <div id="kycMsg" class="trade-message" style="display:none"></div>
           <div class="kyc-note">
             <strong>Why do we need this?</strong> KYC (Know Your Customer) is a legal requirement for all financial institutions. Your documents are encrypted and securely stored.

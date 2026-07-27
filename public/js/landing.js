@@ -21,19 +21,18 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   });
 });
 
-// ===== WebSocket =====
-let ws;
+// ===== Live prices (polling — serverless-friendly, no persistent connection needed) =====
 const prevPrices = {};
 let currentPrices = {};
 
-function connectWS() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}/ws`);
-  ws.onmessage = e => { try { const m = JSON.parse(e.data); if (m.type === 'prices') onPrices(m.data); } catch {} };
-  ws.onclose = () => setTimeout(connectWS, 3000);
-  ws.onerror = () => ws.close();
+async function pollPrices() {
+  try {
+    const res = await fetch('/api/public/prices');
+    if (res.ok) onPrices(await res.json());
+  } catch { /* transient network error — next poll will retry */ }
 }
-connectWS();
+pollPrices();
+setInterval(pollPrices, 1000);
 
 function onPrices(prices) {
   currentPrices = { ...currentPrices, ...prices };

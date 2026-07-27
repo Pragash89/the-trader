@@ -8,6 +8,7 @@
     "dev": "node server.js"
   },
   "dependencies": {
+    "@vercel/blob": "^0.27.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
@@ -15,8 +16,7 @@
     "jsonwebtoken": "^9.0.3",
     "metaapi.cloud-sdk": "^29.3.3",
     "multer": "^1.4.5-lts.1",
-    "nedb-promises": "^6.2.3",
-    "uuid": "^9.0.1",
-    "ws": "^8.21.0"
+    "pg": "^8.13.1",
+    "uuid": "^9.0.1"
   }
 }

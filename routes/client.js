@@ -2,20 +2,15 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const engine = require('../engine/trading');
+const { checkAndCloseTrades } = require('../engine/sltp');
 const { authenticateClient } = require('../middleware/auth');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { put } = require('@vercel/blob');
 const { v4: uuidv4 } = require('uuid');
 
-const uploadDir = path.join(__dirname, '../public/uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: uploadDir,
-  filename: (req, file, cb) => cb(null, req.user.id + '_' + Date.now() + path.extname(file.originalname))
-});
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+// Vercel's filesystem is read-only/ephemeral outside /tmp, so KYC documents are
+// buffered in memory and streamed straight to Vercel Blob storage instead of disk.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 10 } });
 
 function now() { return new Date().toISOString(); }
 
@@ -38,6 +33,7 @@ router.put('/profile', authenticateClient, async (req, res) => {
 // Dashboard
 router.get('/dashboard', authenticateClient, async (req, res) => {
   try {
+    await checkAndCloseTrades({ user_id: req.user.id });
     const user = await db.users.findOne({ _id: req.user.id });
     const accounts = await db.accounts.find({ user_id: req.user.id });
     const openTrades = await db.trades.find({ user_id: req.user.id, status: 'open' });
@@ -81,6 +77,7 @@ router.get('/dashboard', authenticateClient, async (req, res) => {
 
 // Open trades
 router.get('/trades/open', authenticateClient, async (req, res) => {
+  await checkAndCloseTrades({ user_id: req.user.id });
   const trades = await db.trades.find({ user_id: req.user.id, status: 'open' });
   const result = trades.map(trade => {
     const price = engine.getPrice(trade.symbol);
@@ -126,8 +123,8 @@ router.post('/trades/open', authenticateClient, async (req, res) => {
       return res.status(400).json({ error: `Insufficient margin. Required: $${(marginRequired + commission).toFixed(2)}, Available: $${(user.free_margin || 0).toFixed(2)}` });
     }
 
-    const ticket = engine.getNextTicket();
     const tradeId = uuidv4().replace(/-/g, '');
+    const ticket = engine.ticketFromId(tradeId);
 
     await db.trades.insert({
       _id: tradeId,
@@ -201,8 +198,13 @@ router.put('/trades/:tradeId', authenticateClient, async (req, res) => {
   res.json({ message: 'Trade modified' });
 });
 
-// Prices
-router.get('/prices', authenticateClient, (req, res) => res.json(engine.getAllPrices()));
+// Prices — polled every ~1s by the dashboard/webtrader; also enforces this user's
+// SL/TP on every poll so open positions get closed close to real-time even without
+// a background process.
+router.get('/prices', authenticateClient, async (req, res) => {
+  await checkAndCloseTrades({ user_id: req.user.id });
+  res.json(engine.getAllPrices());
+});
 router.get('/prices/:symbol', authenticateClient, (req, res) => {
   const p = engine.getPrice(req.params.symbol.toUpperCase());
   if (!p) return res.status(404).json({ error: 'Symbol not found' });
@@ -237,17 +239,31 @@ router.get('/transactions', authenticateClient, async (req, res) => {
   res.json(txns);
 });
 
-// Upload KYC
-router.post('/kyc/upload', authenticateClient, upload.single('document'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+// Upload KYC — accepts multiple documents in a single request
+router.post('/kyc/upload', authenticateClient, upload.array('documents', 10), async (req, res) => {
+  if (!req.files || !req.files.length) return res.status(400).json({ error: 'No files uploaded' });
   const { type } = req.body;
-  await db.kyc.insert({ _id: uuidv4().replace(/-/g,''), user_id: req.user.id, type, filename: req.file.filename, status: 'pending', uploaded_at: now() });
+
+  const uploaded = [];
+  for (const file of req.files) {
+    const blobName = `kyc/${req.user.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${fileExt(file.originalname)}`;
+    const blob = await put(blobName, file.buffer, { access: 'public', contentType: file.mimetype });
+    const doc = { _id: uuidv4().replace(/-/g,''), user_id: req.user.id, type, filename: file.originalname, url: blob.url, status: 'pending', uploaded_at: now() };
+    await db.kyc.insert(doc);
+    uploaded.push(doc);
+  }
+
   const user = await db.users.findOne({ _id: req.user.id });
   if (user.kyc_status === 'pending') {
     await db.users.update({ _id: req.user.id }, { $set: { kyc_status: 'under_review' } });
   }
-  res.json({ message: 'Document uploaded for review' });
+  res.json({ message: `${uploaded.length} document(s) uploaded for review`, documents: uploaded });
 });
+
+function fileExt(filename) {
+  const i = filename.lastIndexOf('.');
+  return i === -1 ? '' : filename.slice(i);
+}
 
 // Mark notifications read
 router.put('/notifications/read', authenticateClient, async (req, res) => {

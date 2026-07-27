@@ -2,13 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const http = require('http');
-const WebSocket = require('ws');
 const engine = require('./engine/trading');
+const { checkAndCloseTrades } = require('./engine/sltp');
 
 const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server, path: '/ws' });
 
 app.use(cors());
 app.use(express.json());
@@ -27,79 +24,36 @@ mt5Manager.init().then(ok => {
   if (ok) console.log('[MT5] Manager account ready');
 }).catch(err => console.error('[MT5] Startup error:', err.message));
 
-// WebSocket: real-time price streaming
-const clients = new Set();
-
-wss.on('connection', (ws, req) => {
-  clients.add(ws);
-  // Send all current prices immediately
-  ws.send(JSON.stringify({ type: 'prices', data: engine.getAllPrices() }));
-
-  ws.on('close', () => clients.delete(ws));
-  ws.on('error', () => clients.delete(ws));
+// Unauthenticated price feed — powers the public landing page ticker/market table.
+// Prices are computed deterministically from wall-clock time (see engine/trading.js),
+// so there's no server-side state to keep warm between requests.
+app.get('/api/public/prices', (req, res) => {
+  res.json(engine.getAllPrices());
 });
 
-engine.on('prices', (updates) => {
-  const msg = JSON.stringify({ type: 'prices', data: updates });
-  for (const ws of clients) {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(msg);
-    }
+// Vercel Cron target — sweeps ALL open trades for SL/TP hits. This is a safety net
+// for accounts that aren't actively polling /api/client/prices (which also checks
+// SL/TP for the current user on every call). Configured in vercel.json.
+app.get('/api/cron/sltp', async (req, res) => {
+  if (process.env.CRON_SECRET) {
+    const auth = req.headers.authorization;
+    if (auth !== `Bearer ${process.env.CRON_SECRET}`) return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const closed = await checkAndCloseTrades();
+    res.json({ closed: closed.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
-
-// Check stop-loss and take-profit every 2 seconds
-const db = require('./database/db');
-setInterval(async () => {
-  try {
-    const openTrades = await db.trades.find({ status: 'open' });
-
-    for (const trade of openTrades) {
-      const price = engine.getPrice(trade.symbol);
-      if (!price) continue;
-
-      const currentPrice = trade.type === 'buy' ? price.bid : price.ask;
-      let shouldClose = false;
-
-      if (trade.stop_loss > 0) {
-        if (trade.type === 'buy' && currentPrice <= trade.stop_loss) shouldClose = true;
-        if (trade.type === 'sell' && currentPrice >= trade.stop_loss) shouldClose = true;
-      }
-      if (trade.take_profit > 0) {
-        if (trade.type === 'buy' && currentPrice >= trade.take_profit) shouldClose = true;
-        if (trade.type === 'sell' && currentPrice <= trade.take_profit) shouldClose = true;
-      }
-
-      if (shouldClose) {
-        const profit = engine.calculateProfit(trade.symbol, trade.type, trade.volume, trade.open_price, currentPrice);
-        const priceData = engine.prices[trade.symbol];
-        const user = await db.users.findOne({ _id: trade.user_id });
-        const marginReturn = (trade.open_price * (priceData?.contract || 100000) * trade.volume) / (user?.leverage || 100);
-
-        await db.trades.update({ _id: trade._id }, { $set: { status: 'closed', close_price: currentPrice, profit, close_time: new Date().toISOString() } });
-
-        if (user) {
-          const newBal = parseFloat(((user.balance || 0) + profit + marginReturn).toFixed(2));
-          const newMargin = parseFloat(Math.max(0, (user.margin || 0) - marginReturn).toFixed(2));
-          await db.users.update({ _id: user._id }, { $set: { balance: newBal, margin: newMargin, free_margin: parseFloat((newBal - newMargin).toFixed(2)) } });
-        }
-
-        await db.notifications.insert({ _id: require('uuid').v4().replace(/-/g,''), user_id: trade.user_id, title: `Trade Closed (SL/TP)`, message: `${trade.symbol} ${trade.type.toUpperCase()} ${trade.volume} lot(s) closed at ${currentPrice}. P&L: $${profit.toFixed(2)}`, type: profit >= 0 ? 'success' : 'warning', read: false, created_at: new Date().toISOString() });
-
-        const closeMsg = JSON.stringify({ type: 'trade_closed', data: { trade_id: trade._id, profit, close_price: currentPrice } });
-        for (const ws of clients) {
-          if (ws.readyState === WebSocket.OPEN) ws.send(closeMsg);
-        }
-      }
-    }
-  } catch (err) { /* silent */ }
-}, 2000);
 
 // Health check — visit /api/health to diagnose startup issues
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     jwt_secret_set: !!process.env.JWT_SECRET,
+    postgres_url_set: !!(process.env.POSTGRES_URL || process.env.DATABASE_URL),
+    blob_token_set: !!process.env.BLOB_READ_WRITE_TOKEN,
     metaapi_set: !!process.env.METAAPI_TOKEN,
     mt5_account_set: !!process.env.MT5_ACCOUNT_ID,
     node: process.version,
@@ -127,17 +81,22 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log('\n╔══════════════════════════════════════════╗');
-  console.log('║       THE TRADER — FOREX BROKERAGE       ║');
-  console.log('╠══════════════════════════════════════════╣');
-  console.log(`║  Server running at http://localhost:${PORT}   ║`);
-  console.log('║  WebSocket: ws://localhost:3000/ws        ║');
-  console.log('╠══════════════════════════════════════════╣');
-  console.log('║  Admin:  admin@thetrader.com              ║');
-  console.log('║  Pass:   Admin@2024!                      ║');
-  console.log('║  Demo:   demo@thetrader.com               ║');
-  console.log('║  Pass:   Demo@1234!                       ║');
-  console.log('╚══════════════════════════════════════════╝\n');
-});
+// Vercel imports this file as a serverless function and calls the exported app
+// directly — app.listen() only runs for local dev / non-Vercel hosting.
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log('\n╔══════════════════════════════════════════╗');
+    console.log('║       THE TRADER — FOREX BROKERAGE       ║');
+    console.log('╠══════════════════════════════════════════╣');
+    console.log(`║  Server running at http://localhost:${PORT}   ║`);
+    console.log('╠══════════════════════════════════════════╣');
+    console.log('║  Admin:  admin@thetrader.com              ║');
+    console.log('║  Pass:   Admin@2024!                      ║');
+    console.log('║  Demo:   demo@thetrader.com               ║');
+    console.log('║  Pass:   Demo@1234!                       ║');
+    console.log('╚══════════════════════════════════════════╝\n');
+  });
+}
+
+module.exports = app;
